@@ -1,3 +1,5 @@
+use std::char;
+
 
 fn printScene(func: &SurfaceTimeFunction, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, binary: i32) {
 
@@ -109,72 +111,74 @@ fn printSpline(fp: &FILE, v00: TwoJetVec, v01: TwoJetVec, v10: TwoJetVec, v11: T
   }
 }
 
-static inline double sqr(double x) {
-  return x*x;
+#[inline(always)]
+fn calcSpeedV(v: TwoJetVec) -> f64 {
+  return v.x.df_dv().powi(2) + v.y.df_dv().powi(2) + v.z.df_dv().powi(2);
 }
 
 #[inline(always)]
-fn calcSpeedV(v: TwoJetVec) {
-  return v.x.df_dv().powi(2) + v.y.df_dv().powi(2) + v.z.df_dv().powi(2);
-}
-static inline double calcSpeedU(TwoJetVec v) {
-  return sqrt(sqr(v.x.df_du()) + sqr(v.y.df_du()) + sqr(v.z.df_du()));
+fn calcSpeedU(v: TwoJetVec) -> f64 {
+  return (v.x.df_du().powi(2) + v.y.df_du().powi(2) + v.z.df_du().powi(2)).sqrt();
 }
 
-#define	PART_POS 0x1
-#define	PART_NEG 0x2
+// #define	PART_POS 0x1
+// #define	PART_NEG 0x2
 
-char *parse_parts(char *parts)
-{
-    /* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
-     * complete sphere.
-     */
-    char *partlist = (char *)calloc(n_strips, sizeof(char));
-    char *cp, *ncp, sign;
-    int bits, j;
+fn parse_parts(parts: String) {
+	/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
+	 * complete sphere.
+	 */
+	char *partlist = (char *)calloc(n_strips, sizeof(char));
+	char *cp, *ncp, sign;
+	int bits, j;
 
-    for(cp = parts; *cp; ) {
-	while((sign = *cp++) == ' ' || sign == ',')
-	    ;
-	if(sign == '+')
-	    bits = PART_POS;
-	else if(sign == '-')
-	    bits = PART_NEG;
-	else {
-	    bits = PART_POS|PART_NEG;
-	    cp--;
+	for (cp = parts; *cp;)
+	{
+		while ((sign = *cp++) == ' ' || sign == ',')
+			;
+		if (sign == '+')
+			bits = PART_POS;
+		else if (sign == '-')
+			bits = PART_NEG;
+		else
+		{
+			bits = PART_POS | PART_NEG;
+			cp--;
+		}
+		if (*cp == '*')
+		{
+			for (j = 0; j < n_strips; j++)
+				partlist[j] |= bits;
+			cp++;
+		}
+		else
+		{
+			j = strtol(cp, &ncp, 0);
+			if (cp == ncp)
+			{
+				fprintf(stderr,
+						"evert -parts: expected string with alternating signs and strip numbers\n");
+				return NULL;
+			}
+			if (j < 0 || j >= n_strips)
+			{
+				fprintf(stderr,
+						"evert -parts: bad strip number %d; must be in range 0..%d\n", j, n_strips - 1);
+				return NULL;
+			}
+			partlist[j] |= bits;
+			cp = ncp;
+		}
 	}
-	if(*cp == '*') {
-	    for(j = 0; j < n_strips; j++)
-		partlist[j] |= bits;
-	    cp++;
-	} else {
-	    j = strtol(cp, &ncp, 0);
-	    if(cp == ncp) {
-		fprintf(stderr,
-"evert -parts: expected string with alternating signs and strip numbers\n");
-		return NULL;
-	    }
-	    if(j < 0 || j >= n_strips) {
-		fprintf(stderr,
-"evert -parts: bad strip number %d; must be in range 0..%d\n", j, n_strips-1);
-		return NULL;
-	    }
-	    partlist[j] |= bits;
-	    cp = ncp;
-	}
-    }
-    return partlist;
+	return partlist;
 }
 
-void printScene(
+fn printScene(
 		SurfaceTimeFunction *func,
 		double umin, double umax, double adu,
 		double vmin, double vmax, double adv,
 		double t, int binary
-		) 
-     
-{
+		) {
   static TwoJetVec **values;
   int j, k;
   int jmax = (int) (fabs(umax-umin)/adu+.5);
