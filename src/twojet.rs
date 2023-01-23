@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TwoJet {
     pub f:   f64,
     pub fu:  f64,
@@ -9,7 +9,8 @@ pub struct TwoJet {
 impl From<TwoJet> for f64 { fn from(s: TwoJet) -> f64 { return s.f; } }
 
 impl std::ops::Add<TwoJet> for TwoJet {
-    fn add(&self, _rhs: TwoJet) -> TwoJet {
+    type Output = TwoJet;
+    fn add(&self, _rhs: Self) -> Self::Output {
         return TwoJet {
             f:   self.f   + _rhs.f,
             fu:  self.fu  + _rhs.fu,
@@ -17,6 +18,7 @@ impl std::ops::Add<TwoJet> for TwoJet {
             fuv: self.fuv + _rhs.fuv,
         };
     }
+
 }
 
 impl std::ops::AddAssign<TwoJet> for TwoJet {
@@ -29,7 +31,8 @@ impl std::ops::AddAssign<TwoJet> for TwoJet {
 }
 
 impl std::ops::Mul<TwoJet> for TwoJet {
-    fn mul(&self, rhs: TwoJet) -> TwoJet {
+    type Output = TwoJet;
+    fn mul(&self, rhs: Self) -> Self::Output {
         return TwoJet {
             f:   self.f * rhs.f,
             fu:  self.f * rhs.fu  + self.fu * rhs.f,
@@ -40,7 +43,7 @@ impl std::ops::Mul<TwoJet> for TwoJet {
 }
 
 impl std::ops::MulAssign<TwoJet> for TwoJet {
-    fn mul_assign(&mut self, rhs: TwoJet) {
+    fn mul_assign(&mut self, rhs: Self) {
         self.f    = self.f * rhs.f;
         self.fv   = self.f * rhs.fv  + self.fv * rhs.f;
         self.fu   = self.f * rhs.fu  + self.fu * rhs.f;
@@ -49,7 +52,8 @@ impl std::ops::MulAssign<TwoJet> for TwoJet {
 }
 
 impl std::ops::Add<f64> for TwoJet {
-    fn add(&self, _rhs: f64) -> TwoJet {
+    type Output = TwoJet;
+    fn add(self, _rhs: f64) -> Self::Output {
         return TwoJet {
             f:   self.f   + _rhs,
             fu:  self.fu  + _rhs,
@@ -66,7 +70,8 @@ impl std::ops::AddAssign<f64> for TwoJet {
 }
 
 impl std::ops::Mul<f64> for TwoJet {
-    fn mul(&self, rhs: TwoJet) -> TwoJet {
+    type Output = TwoJet;
+    fn mul(&self, rhs: f64) -> Self::Output {
         return TwoJet {
             f:   self.f   * rhs,
             fu:  self.fu  * rhs,
@@ -80,13 +85,14 @@ impl std::ops::MulAssign<f64> for TwoJet {
     fn mul_assign(&mut self, rhs: f64) {
         self.f   = self.f   * rhs;
         self.fu  = self.fu  * rhs;
-        self.dv  = self.dv  * rhs;
+        self.fv  = self.fv  * rhs;
         self.fuv = self.fuv * rhs;
     }
 }
 
 impl std::ops::BitXor<f64> for TwoJet {
-    fn bitxor(&self, rhs: f64) -> TwoJet {
+    type Output = TwoJet;
+    fn bitxor(self, rhs: f64) -> Self::Output {
         let (x0, x1, x2): (f64, f64, f64);
         let x0: f64 = self.f.powf(rhs);
         
@@ -106,30 +112,53 @@ impl std::ops::BitXor<f64> for TwoJet {
     }
 }
 
+impl std::cmp::PartialEq<f64> for TwoJet {
+    fn eq(&self, other: &f64) -> bool { self.f == *other }
+    fn ne(&self, other: &f64) -> bool { self.f != *other }
+}
+
 impl std::cmp::PartialOrd<f64> for TwoJet {
-    fn ge(&self, other: &f64) -> bool { self.f >= other }
-    fn gt(&self, other: &f64) -> bool { self.f >  other }
-    fn le(&self, other: &f64) -> bool { self.f <= other }
-    fn lt(&self, other: &f64) -> bool { self.f <  other }
+    fn ge(&self, other: &f64) -> bool { self.f >= *other }
+    fn gt(&self, other: &f64) -> bool { self.f >  *other }
+    fn le(&self, other: &f64) -> bool { self.f <= *other }
+    fn lt(&self, other: &f64) -> bool { self.f <  *other }
+
+    fn partial_cmp(&self, other: &f64) -> Option<std::cmp::Ordering> {
+        match self.f.partial_cmp(&other.f) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        match self.fu.partial_cmp(&other.fu) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        match self.fv.partial_cmp(&other.fv) {
+            Some(core::cmp::Ordering::Equal) => {}
+            ord => return ord,
+        }
+        self.fuv.partial_cmp(&other.fuv)
+    }
 }
 
 impl std::ops::RemAssign<f64> for TwoJet {
-    fn rem(&self, rhs: f64) {
-        self.f = f % rhs;
-        if (self.f < 0) { self.f = self.f + rhs; };
+    fn rem_assign(&mut self, rhs: f64) {
+        self.f = self.f % rhs;
+        if self.f < 0 {
+            self.f = self.f + rhs;
+        };
     }   
 }
 
 impl std::ops::BitXorAssign<f64> for TwoJet {
-    fn bitxor(&self, rhs: f64) {
+    fn bitxor_assign(&mut self, rhs: f64) {
         let (x0, x1, x2): (f64, f64, f64);
         let x0: f64 = self.f.powf(rhs);
         
         if self.f == 0.0 {
             (x1, x2) = (0.0, 0.0);
         } else {
-            x1 =  rhs      * x0 / self.f;
-            x2 = (rhs - 1) * x1 / self.f;
+            x1 =  rhs        * x0 / self.f;
+            x2 = (rhs - 1.0) * x1 / self.f;
         };
 
         self.f   = x0;
@@ -140,26 +169,33 @@ impl std::ops::BitXorAssign<f64> for TwoJet {
 }
 
 impl TwoJet {
-    fn new(d: f64, du: f64, dv: f64, duv: Option<f64>) -> TwoJet {
+    fn new(d: f64, du: f64, dv: f64, duv: Option<f64>) -> Self {
         return TwoJet {
-            f:   d,
-            fu:  du,
-            fv:  dv,
+            f: d, fu: du, fv: dv,
             fuv: match duv {
                 Some(duv) => { duv },
                 None => { 0.0 },
             },
         }
     }
-    fn Annihilate(&mut self, index: i32) {
+    fn annihilated(&self, index: i32) -> Self {
+        let mut o: TwoJet = self.clone();
         match index {
-          0 => { self.fu = 0 },
-          1 => { self.fv = 0 },
+          0 => { o.fu = 0.0 },
+          1 => { o.fv = 0.0 },
+          _ => { /* ???? */ },
+        };       o.fuv = 0.0;
+        return o;
+    }
+    fn annihilate(&mut self, index: i32) {
+        match index {
+          0 => { self.fu = 0.0 },
+          1 => { self.fv = 0.0 },
           _ => { /* ????? */ },
         };
-        self.fuv = 0;
+        self.fuv = 0.0;
     }
-    fn TakeSin(&mut self) {
+    fn take_sin(&mut self) {
         self.f *= 2.0 * std::f64::consts::PI;
         
         let s: f64 =  self.f.sin();
@@ -170,7 +206,7 @@ impl TwoJet {
         self.fv  = self.fv  * c;
         self.fuv = self.fuv * c - self.fu * self.fv * s;
     }
-    fn TakeCos(&mut self) {
+    fn take_cos(&mut self) {
         self.f *= 2 * std::f64::consts::PI;
         
         let s: f64 =  self.f.cos();

@@ -1,9 +1,4 @@
-use std::char;
-
-
-fn printScene(func: &SurfaceTimeFunction, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, binary: i32) {
-
-}
+use core::panic;
 
 // #ifndef __SPLINE
 // #define __SPLINE
@@ -121,165 +116,156 @@ fn calcSpeedU(v: TwoJetVec) -> f64 {
   return (v.x.df_du().powi(2) + v.y.df_du().powi(2) + v.z.df_du().powi(2)).sqrt();
 }
 
-// #define	PART_POS 0x1
-// #define	PART_NEG 0x2
+static PART_POS: i32 = 0x1;
+static PART_NEG: i32 = 0x2;
 
-fn parse_parts(parts: String) {
-	/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
-	 * complete sphere.
-	 */
-	char *partlist = (char *)calloc(n_strips, sizeof(char));
-	char *cp, *ncp, sign;
-	int bits, j;
+// fn parse_parts(parts: &[char]) -> Option<&[char]> {
+// 	/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into complete sphere. */
+// 	let partlist: [char; n_strips]; // char *partlist = (char *)calloc(n_strips, sizeof(char));
+// 	let (sign, bits, j): (char, i32, usize); // char *cp, *ncp, sign;
+// 	let (bits, j): (i32, i32); // 	int bits, j;
+	
+// 	let idx: usize = 0;
+	
+// 	for (cp = parts; *cp;) {
+// 		while ((sign = *cp++) == ' ' || sign == ',') {  };
+// 		if (sign == '+')
+// 			bits = PART_POS;
+// 		else if (sign == '-')
+// 			bits = PART_NEG;
+// 		else
+// 		{
+// 			bits = PART_POS | PART_NEG;
+// 			cp--;
+// 		}
+// 		if (*cp == '*')
+// 		{
+// 			for (j = 0; j < n_strips; j++)
+// 				partlist[j] |= bits;
+// 			cp++;
+// 		}
+// 		else
+// 		{
+// 			j = strtol(cp, &ncp, 0);
+// 			if (cp == ncp)
+// 			{
+// 				fprintf(stderr,
+// 						"evert -parts: expected string with alternating signs and strip numbers\n");
+// 				return NULL;
+// 			}
+// 			if (j < 0 || j >= n_strips)
+// 			{
+// 				fprintf(stderr,
+// 						"evert -parts: bad strip number %d; must be in range 0..%d\n", j, n_strips - 1);
+// 				return NULL;
+// 			}
+// 			partlist[j] |= bits;
+// 			cp = ncp;
+// 		}
+// 	}
+// 	return partlist;
+// }
 
-	for (cp = parts; *cp;)
-	{
-		while ((sign = *cp++) == ' ' || sign == ',')
-			;
-		if (sign == '+')
-			bits = PART_POS;
-		else if (sign == '-')
-			bits = PART_NEG;
-		else
-		{
-			bits = PART_POS | PART_NEG;
-			cp--;
-		}
-		if (*cp == '*')
-		{
-			for (j = 0; j < n_strips; j++)
-				partlist[j] |= bits;
-			cp++;
-		}
-		else
-		{
-			j = strtol(cp, &ncp, 0);
-			if (cp == ncp)
-			{
-				fprintf(stderr,
-						"evert -parts: expected string with alternating signs and strip numbers\n");
-				return NULL;
-			}
-			if (j < 0 || j >= n_strips)
-			{
-				fprintf(stderr,
-						"evert -parts: bad strip number %d; must be in range 0..%d\n", j, n_strips - 1);
-				return NULL;
-			}
-			partlist[j] |= bits;
-			cp = ncp;
-		}
-	}
-	return partlist;
-}
+// pub(crate) fn printScene(func: &SurfaceTimeFunction, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, binary: i32) {
+//   let values: &&TwoJetVec;
+//   let (j, k): (i32, i32);
+//   let jmax: i32 = ((umax - umin).abs() / adu + 0.5) as i32;
+//   let kmax: i32 = ((vmax - vmin).abs() / adv + 0.5) as i32;
+//   let (u, v, du, dv): (f64, f64, f64, f64);
 
-fn printScene(
-		SurfaceTimeFunction *func,
-		double umin, double umax, double adu,
-		double vmin, double vmax, double adv,
-		double t, int binary
-		) {
-  static TwoJetVec **values;
-  int j, k;
-  int jmax = (int) (fabs(umax-umin)/adu+.5);
-  int kmax = (int) (fabs(vmax-vmin)/adv+.5);
-  double u, v, du, dv;
-  FILE *fp = stdout;
+//   if jmax == 0 { jmax = 1 };
+//   du = (umax - umin) / jmax;
+//   if kmax == 0 { kmax = 1 };
+//   dv = (vmax-vmin) / kmax;
+//   values = (TwoJetVec **) calloc(jmax+1, sizeof(TwoJetVec *));
+//   double *speedv = (double *) calloc(jmax+1, sizeof(double));
+//   double **speedu = (double **) calloc(jmax+1, sizeof(double *));
+//   for (j = 0; j <= jmax; j++) {
+//     u = umin + j*du;
+//     values[j] = (TwoJetVec *) calloc(kmax+1, sizeof(TwoJetVec));
+//     speedu[j] = (double *) calloc(kmax+1, sizeof(double));
+//     speedv[j] = calcSpeedV((*func)(ThreeJet(u, 1, 0), ThreeJet(0, 0, 1), t));
+//     if(speedv[j] == 0) {
+//       /* Perturb a bit, hoping to avoid degeneracy */
+//       u += (u<1) ? 1e-9 : -1e-9;
+//       speedv[j] = calcSpeedV((*func)(ThreeJet(u, 1, 0), ThreeJet(0, 0, 1), t));
+//     }
+//     for (k = 0; k <= kmax; k++) {
+//       v = vmin + k*dv;
+//       values[j][k] = (*func)(
+//        ThreeJet(u, 1, 0),
+//        ThreeJet(v, 0, 1),
+//        t
+//       );
+//       speedu[j][k] = calcSpeedU(values[j][k]);
+//     }
+//   }
+// /*
+//   fprintf(fp, "Declare \"speeds\" \"varying float\"\n");
+//   fprintf(fp, "Declare \"speedt\" \"varying float\"\n");
+// */
+//   if(parts != NULL) {
+//     /* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
+//      * complete sphere.
+//      */
+//     char *partlist = parse_parts(parts);
 
-  if(jmax == 0) jmax = 1;
-  du = (umax-umin) / jmax;
-  if(kmax == 0) kmax = 1;
-  dv = (vmax-vmin) / kmax;
-  values = (TwoJetVec **) calloc(jmax+1, sizeof(TwoJetVec *));
-  double *speedv = (double *) calloc(jmax+1, sizeof(double));
-  double **speedu = (double **) calloc(jmax+1, sizeof(double *));
-  for (j = 0; j <= jmax; j++) {
-    u = umin + j*du;
-    values[j] = (TwoJetVec *) calloc(kmax+1, sizeof(TwoJetVec));
-    speedu[j] = (double *) calloc(kmax+1, sizeof(double));
-    speedv[j] = calcSpeedV((*func)(ThreeJet(u, 1, 0), ThreeJet(0, 0, 1), t));
-    if(speedv[j] == 0) {
-      /* Perturb a bit, hoping to avoid degeneracy */
-      u += (u<1) ? 1e-9 : -1e-9;
-      speedv[j] = calcSpeedV((*func)(ThreeJet(u, 1, 0), ThreeJet(0, 0, 1), t));
-    }
-    for (k = 0; k <= kmax; k++) {
-      v = vmin + k*dv;
-      values[j][k] = (*func)(
-       ThreeJet(u, 1, 0),
-       ThreeJet(v, 0, 1),
-       t
-      );
-      speedu[j][k] = calcSpeedU(values[j][k]);
-    }
-  }
-/*
-  fprintf(fp, "Declare \"speeds\" \"varying float\"\n");
-  fprintf(fp, "Declare \"speedt\" \"varying float\"\n");
-*/
-  if(parts != NULL) {
-    /* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
-     * complete sphere.
-     */
-    char *partlist = parse_parts(parts);
+//     if(partlist == NULL)
+// 	return;
 
-    if(partlist == NULL)
-	return;
+//     fprintf(fp, "{ INST transforms { TLIST\n");
+//     for(j = -1; j <= 1; j += 2) {
+// 	for(k = 0; k < n_strips; k++) {
+// 	  if(partlist[k] & (j<0 ? PART_NEG : PART_POS)) {
+// 	    double t = 2*M_PI * (j < 0 ? n_strips-1-k : k) / n_strips;
+// 	    double s = sin(t), c = cos(t);
 
-    fprintf(fp, "{ INST transforms { TLIST\n");
-    for(j = -1; j <= 1; j += 2) {
-	for(k = 0; k < n_strips; k++) {
-	  if(partlist[k] & (j<0 ? PART_NEG : PART_POS)) {
-	    double t = 2*M_PI * (j < 0 ? n_strips-1-k : k) / n_strips;
-	    double s = sin(t), c = cos(t);
+// 	    fprintf(fp, "# %c%d of %d\n", j<0 ? '-' : '+', k, n_strips);
+// 	    fprintf(fp, "\t%10f %10f %10f %10f\n", j*c, -s,	     0., 0.);
+// 	    fprintf(fp, "\t%10f %10f %10f %10f\n", j*s,  c,	     0., 0.);
+// 	    fprintf(fp, "\t%10f %10f %10f %10f\n", 0.,   0., (double)j, 0.);
+// 	    fprintf(fp, "\t%10f %10f %10f %10f\n", 0.,   0.,	     0., 1.);
+// 	  }
+// 	}
+//     }
+//     fprintf(fp, "}\ngeom ");
+//   }
 
-	    fprintf(fp, "# %c%d of %d\n", j<0 ? '-' : '+', k, n_strips);
-	    fprintf(fp, "\t%10f %10f %10f %10f\n", j*c, -s,	     0., 0.);
-	    fprintf(fp, "\t%10f %10f %10f %10f\n", j*s,  c,	     0., 0.);
-	    fprintf(fp, "\t%10f %10f %10f %10f\n", 0.,   0., (double)j, 0.);
-	    fprintf(fp, "\t%10f %10f %10f %10f\n", 0.,   0.,	     0., 1.);
-	  }
-	}
-    }
-    fprintf(fp, "}\ngeom ");
-  }
+//   if(bezier) {
+//     fprintf(fp, "{ STBBP%s\n", binary ? " BINARY" : "");
+//     for (j = 0; j < jmax; j++) {
+//       u = umin + j*du;
+//       for (k = 0; k < kmax; k++) {
+// 	v = vmin + k*dv;
+// 	printSpline(fp, values[j][k], values[j][k+1],
+// 		  values[j+1][k], values[j+1][k+1],
+// 		  du, dv,
+// 		  umin+j*du, umin+(j+1)*du,  vmin+k*dv, vmin+(k+1)*dv, binary);
+//       }
+//     }
+//   } 
+//   else {
+//     int nu = kmax+1, nv = jmax+1;
+//     fprintf(fp, "{ NMESH%s\n", binary ? " BINARY" : "");
 
-  if(bezier) {
-    fprintf(fp, "{ STBBP%s\n", binary ? " BINARY" : "");
-    for (j = 0; j < jmax; j++) {
-      u = umin + j*du;
-      for (k = 0; k < kmax; k++) {
-	v = vmin + k*dv;
-	printSpline(fp, values[j][k], values[j][k+1],
-		  values[j+1][k], values[j+1][k+1],
-		  du, dv,
-		  umin+j*du, umin+(j+1)*du,  vmin+k*dv, vmin+(k+1)*dv, binary);
-      }
-    }
-  } 
-  else {
-    int nu = kmax+1, nv = jmax+1;
-    fprintf(fp, "{ NMESH%s\n", binary ? " BINARY" : "");
+//     if(binary) {
+// 	fwrite(&nu, sizeof(int), 1, stdout);
+// 	fwrite(&nv, sizeof(int), 1, stdout);
+//     } else {
+// 	fprintf(fp, "%d %d\n", nu, nv);
+//     }
+//     for(j = 0; j <= jmax; j++) {
+// 	for(k = 0; k <= kmax; k++)
+// 	    printMesh(fp, values[j][k], binary);
+// 	if(!binary)
+// 	    fputc('\n', fp);
+//     }
+//   }
+//   if(parts)
+//     fprintf(fp, " }\n");
+//   fprintf(fp, "}\n");
+// }
 
-    if(binary) {
-	fwrite(&nu, sizeof(int), 1, stdout);
-	fwrite(&nv, sizeof(int), 1, stdout);
-    } else {
-	fprintf(fp, "%d %d\n", nu, nv);
-    }
-    for(j = 0; j <= jmax; j++) {
-	for(k = 0; k <= kmax; k++)
-	    printMesh(fp, values[j][k], binary);
-	if(!binary)
-	    fputc('\n', fp);
-    }
-  }
-  if(parts)
-    fprintf(fp, " }\n");
-  fprintf(fp, "}\n");
-}
-
-void impossible(char *msg) {
-  fprintf(stderr, "%s\n", msg);
-  exit(1);
-}
+// fn impossible(msg: &str) {
+//   panic!("Internal error: {}", msg);
+// }

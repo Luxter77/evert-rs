@@ -1,6 +1,9 @@
 #![allow(unused_variables)]
 
+
 mod spline;
+mod twojet;
+mod twojetvec;
 
 use clap::Parser;
 
@@ -85,29 +88,25 @@ fn main() {
     // char *parts = NULL;
 
     if bendtime >= 0.0 {
-        spline::printScene(BendIn, umin, umax, du, vmin, vmax, dv, bendtime, binary);
+        // spline::printScene(BendIn, umin, umax, du, vmin, vmax, dv, bendtime, binary);
     } else {
         /* time = (time - howfar) / chunk */
         if !args.bscene || args.scene {
             if time >= uncorrstart && uncorrstart >= 0.0 {
-                spline::printScene(UnCorrugate, umin, umax, du, vmin, vmax, dv, (time - uncorrstart) / (1.0 - uncorrstart), binary);
+                // spline::printScene(UnCorrugate, umin, umax, du, vmin, vmax, dv, (time - uncorrstart) / (1.0 - uncorrstart), binary);
             }
         } else if time >= unpushstart && unpushstart >= 0.0 {
-            spline::printScene(UnPush, umin, umax, du, vmin, vmax, dv, (time - unpushstart) / (((uncorrstart < 0.0) ? 1.0 : uncorrstart) - unpushstart), binary);
+            // spline::printScene(UnPush, umin, umax, du, vmin, vmax, dv, (time - unpushstart) / (((uncorrstart < 0.0) ? 1.0 : uncorrstart) - unpushstart), binary);
         } else if time >= twiststart && twiststart >= 0.0 {
-            spline::printScene(Twist, umin, umax, du, vmin, vmax, dv, (time - twiststart) / (((unpushstart < 0.0) ? 1.0 : unpushstart) - twiststart), binary);
+            // spline::printScene(Twist, umin, umax, du, vmin, vmax, dv, (time - twiststart) / (((unpushstart < 0.0) ? 1.0 : unpushstart) - twiststart), binary);
         } else if time >= pushstart && pushstart >= 0.0 {
-            spline::printScene(PushThrough, umin, umax, du, vmin, vmax, dv, (time - pushstart) / (((twiststart < 0.0) ? 1.0 : twiststart) - pushstart), binary);
+            // spline::printScene(PushThrough, umin, umax, du, vmin, vmax, dv, (time - pushstart) / (((twiststart < 0.0) ? 1.0 : twiststart) - pushstart), binary);
         } else if time >= corrstart && corrstart >= 0.0 {
-            spline::printScene(Corrugate, umin, umax, du, vmin, vmax, dv, (time - corrstart) / (((pushstart < 0.0) ? 1.0 : pushstart) - corrstart), binary);
+            // spline::printScene(Corrugate, umin, umax, du, vmin, vmax, dv, (time - corrstart) / (((pushstart < 0.0) ? 1.0 : pushstart) - corrstart), binary);
         };
     }
 }
 
 // #include "threejetvec.h"
 // #include "figureeight.h"
-// #include "spline.h"
 // #include "sphere.h"
-// extern "C" {
-// #include <strings.h>
-// }
