@@ -93,18 +93,18 @@ impl TwoJetVec {
         }
     }
     pub fn normalize(&mut self) {
-        let a: TwoJet = self.dot(*self);
+        let mut a: TwoJet = self.dot(*self);
         if a > 0.0 {
-            a = a ^ -0.5;
+            a ^= -0.5;
         } else {
             a = TwoJet::new(0.0, 0.0, 0.0, Option::None);
         };
         *self *= a;
     }
     pub fn normalized(&self) -> Self {
-        let a: TwoJet = self.dot(*self);
+        let mut a: TwoJet = self.dot(*self);
         if a > 0.0 {
-            a = a ^ -0.5;
+            a ^= -0.5;
         } else {
             a = TwoJet::new(0.0, 0.0, 0.0, Option::None);
         };
