@@ -18,6 +18,14 @@ impl std::ops::Add<TwoJetVec> for TwoJetVec {
     }
 }
 
+impl std::ops::AddAssign<TwoJetVec> for TwoJetVec {
+    fn add_assign(&mut self, rhs: TwoJetVec) {
+        self.x = self.x + rhs.x;
+        self.y = self.y + rhs.y;
+        self.z = self.z + rhs.z;
+    }
+}
+
 impl std::ops::Mul<TwoJet> for TwoJetVec {
     type Output = TwoJetVec;
     fn mul(self, rhs: TwoJet) -> TwoJetVec {
@@ -26,6 +34,14 @@ impl std::ops::Mul<TwoJet> for TwoJetVec {
             y: self.y * rhs,
             z: self.z * rhs,
         }
+    }
+}
+
+impl std::ops::MulAssign<TwoJet> for TwoJetVec {
+    fn mul_assign(&mut self, rhs: TwoJet) {
+        self.x = self.x * rhs;
+        self.y = self.y * rhs;
+        self.z = self.z * rhs;
     }
 }
 
@@ -40,82 +56,116 @@ impl std::ops::Mul<f64> for TwoJetVec {
     }
 }
 
-impl TwoJetVec {
-    fn annihilate_vec(&mut self, index: i32) -> TwoJetVec {
-        let mut o: TwoJetVec = self.clone();
-        o.x.annihilate(index);
-        o.y.annihilate(index);
-        o.z.annihilate(index);
-        return o;
+impl std::ops::MulAssign<f64> for TwoJetVec {
+    fn mul_assign(&mut self, rhs: f64) {
+        self.x = self.x * rhs;
+        self.y = self.y * rhs;
+        self.z = self.z * rhs;
     }
-    fn cross(&self, rhs: Self) -> Self {
-        TwoJetVec {
-            x: self.y * rhs.z + self.z * rhs.y * -1,
-            y: self.z * rhs.x + self.x * rhs.z * -1,
-            z: self.x * rhs.y + self.y * rhs.x * -1,
+}
+
+impl TwoJetVec {
+    pub fn dot(self, rhs: Self) -> TwoJet {
+        self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
+    }
+    pub fn annihilate(&mut self, index: i32) {
+        self.x.annihilate(index);
+        self.y.annihilate(index);
+        self.z.annihilate(index);
+    }
+    pub fn annihilated(&self, index: i32) -> Self {
+        Self {
+            x: self.x.annihilated(index), 
+            y: self.y.annihilated(index), 
+            z: self.z.annihilated(index), 
         }
     }
-    fn dot(&self, rhs: TwoJetVec) -> TwoJet {
-        return self.x * rhs.x + self.y * rhs.y + self.z * rhs.z;
+    pub fn cross(&mut self, rhs: Self) {
+        self.x = self.y * rhs.z + self.z * rhs.y * -1.0;
+        self.y = self.z * rhs.x + self.x * rhs.z * -1.0;
+        self.z = self.x * rhs.y + self.y * rhs.x * -1.0;
     }
-    fn normalize(&self) -> TwoJetVec {
-        let a = self.dot(self);
-        if a > 0 {
+    pub fn crossed(&self, rhs: Self) -> Self {
+        Self {
+            x: self.y * rhs.z + self.z * rhs.y * -1.0,
+            y: self.z * rhs.x + self.x * rhs.z * -1.0,
+            z: self.x * rhs.y + self.y * rhs.x * -1.0,
+        }
+    }
+    pub fn normalize(&mut self) {
+        let a: TwoJet = self.dot(*self);
+        if a > 0.0 {
             a = a ^ -0.5;
         } else {
-            a = TwoJet::new(0, 0, 0, Option::None);
+            a = TwoJet::new(0.0, 0.0, 0.0, Option::None);
         };
-        return self * a;
+        *self *= a;
     }
-    fn rotate_z(&self, angle: TwoJet) -> TwoJetVec {
+    pub fn normalized(&self) -> Self {
+        let a: TwoJet = self.dot(*self);
+        if a > 0.0 {
+            a = a ^ -0.5;
+        } else {
+            a = TwoJet::new(0.0, 0.0, 0.0, Option::None);
+        };
+        return *self * a;
+    }
+    pub fn rotate_z(&mut self, angle: TwoJet) {
         let s: TwoJet = angle.sin();
-        let c: TwoJet = angle.cos();  
+        let c: TwoJet = angle.cos();
+        self.x = self.x * c + self.y * s;
+        self.y = self.x * s * -1.0 + self.y * c;
+        self.z = self.z;
     }
-//             TwoJetVec RotateZ(TwoJetVec v, TwoJet angle)
-//             {
-//                   TwoJetVec result;
-//                   TwoJet s, c;
-//                   s = Sin(angle);
-//                   c = Cos(angle);
-//                   result.x = v.x * c + v.y * s;
-//                   result.y = v.x * s * -1 + v.y * c;
-//                   result.z = v.z;
-//                   return result;
-//                 }
-                
-//                 TwoJetVec RotateY(TwoJetVec v, TwoJet angle)
-//                 {
-//                       TwoJetVec result;
-//                       TwoJet s, c;
-//                       s = Sin(angle);
-//                       c = Cos(angle);
-//                       result.x = v.x * c + v.z * s * -1;
-//                       result.y = v.y;
-//                       result.z = v.x * s + v.z * c;
-//                       return result;
-// }
-
-// TwoJetVec RotateX(TwoJetVec v, TwoJet angle)
-// {
-//   TwoJetVec result;
-//   TwoJet s, c;
-//   s = Sin(angle);
-//   c = Cos(angle);
-//   result.x = v.x;
-//   result.y = v.y * c + v.z * s;
-//   result.z = v.y * s * -1 + v.z * c;
-//   return result;
-// }
-
-// TwoJetVec InterpolateVec(TwoJetVec v1, TwoJetVec v2, TwoJet weight)
-// {
-//       return (v1) * (weight * -1 + 1) + v2 * weight;
-//     }
-    
-//     TwoJet Length(TwoJetVec v)
-//     {
-//           return (v.x ^ 2 + v.y ^ 2) ^ (.5);
-//         }
-        
-//     }
+    pub fn rotated_z(&self, angle: TwoJet) -> Self {
+        let s: TwoJet = angle.sin();
+        let c: TwoJet = angle.cos();
+        Self {
+            x: self.x * c + self.y * s,
+            y: self.x * s * -1.0 + self.y * c,
+            z: self.z,
+        }
+    }
+    pub fn rotate_y(&mut self, angle: TwoJet) {
+        let s: TwoJet = angle.sin();
+        let c: TwoJet = angle.cos();
+        self.x = self.x * c + self.z * s * -1.0;
+        self.y = self.y;
+        self.z = self.x * s + self.z * c;
+    }
+    pub fn rotated_y(&self, angle: TwoJet) -> Self {
+        let s: TwoJet = angle.sin();
+        let c: TwoJet = angle.cos();
+        Self {
+            x: self.x * c + self.z * s * -1.0,
+            y: self.y,
+            z: self.x * s + self.z * c,
+        }
+    }
+    pub fn rotate_x(&mut self, angle: TwoJet) {
+        let s: TwoJet = angle.sin();
+        let c: TwoJet = angle.cos();
+        self.x = self.x;
+        self.y = self.y * c + self.z * s;
+        self.z = self.y * s * -1.0 + self.z * c;
+    }
+    pub fn rotated_x(&self, angle: TwoJet) -> Self {
+        let s: TwoJet = angle.sin();
+        let c: TwoJet = angle.cos();
+        Self {
+            x: self.x,
+            y: self.y * c + self.z * s,
+            z: self.y * s * -1.0 + self.z * c,
+        }
+    }
+    pub fn interpolate(&mut self, rhs: Self, weight: TwoJet) {
+        *self *= weight * -1.0 + 1.0;
+        *self += rhs * weight;
+    }
+    pub fn interpolated(&self, rhs: Self, weight: TwoJet) -> TwoJetVec {
+        (*self) * (weight * -1.0 + 1.0) + (rhs * weight)
+    }
+    pub fn lenght(&self) -> TwoJet {
+        ((self.x ^ 2.0) + (self.y ^ 2.0)) ^ (0.5)
+    }
 }

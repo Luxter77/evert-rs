@@ -10,7 +10,7 @@ impl From<TwoJet> for f64 { fn from(s: TwoJet) -> f64 { return s.f; } }
 
 impl std::ops::Add<TwoJet> for TwoJet {
     type Output = TwoJet;
-    fn add(&self, _rhs: Self) -> Self::Output {
+    fn add(self, _rhs: Self) -> Self::Output {
         return TwoJet {
             f:   self.f   + _rhs.f,
             fu:  self.fu  + _rhs.fu,
@@ -32,7 +32,7 @@ impl std::ops::AddAssign<TwoJet> for TwoJet {
 
 impl std::ops::Mul<TwoJet> for TwoJet {
     type Output = TwoJet;
-    fn mul(&self, rhs: Self) -> Self::Output {
+    fn mul(self, rhs: Self) -> Self::Output {
         return TwoJet {
             f:   self.f * rhs.f,
             fu:  self.f * rhs.fu  + self.fu * rhs.f,
@@ -71,7 +71,7 @@ impl std::ops::AddAssign<f64> for TwoJet {
 
 impl std::ops::Mul<f64> for TwoJet {
     type Output = TwoJet;
-    fn mul(&self, rhs: f64) -> Self::Output {
+    fn mul(self, rhs: f64) -> Self::Output {
         return TwoJet {
             f:   self.f   * rhs,
             fu:  self.fu  * rhs,
@@ -99,8 +99,8 @@ impl std::ops::BitXor<f64> for TwoJet {
         if self.f == 0.0 {
             (x1, x2) = (0.0, 0.0);
         } else {
-            x1 =  rhs      * x0 / self.f;
-            x2 = (rhs - 1) * x1 / self.f;
+            x1 =  rhs        * x0 / self.f;
+            x2 = (rhs - 1.0) * x1 / self.f;
         }
 
         return TwoJet {
@@ -122,28 +122,15 @@ impl std::cmp::PartialOrd<f64> for TwoJet {
     fn gt(&self, other: &f64) -> bool { self.f >  *other }
     fn le(&self, other: &f64) -> bool { self.f <= *other }
     fn lt(&self, other: &f64) -> bool { self.f <  *other }
-
     fn partial_cmp(&self, other: &f64) -> Option<std::cmp::Ordering> {
-        match self.f.partial_cmp(&other.f) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        match self.fu.partial_cmp(&other.fu) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        match self.fv.partial_cmp(&other.fv) {
-            Some(core::cmp::Ordering::Equal) => {}
-            ord => return ord,
-        }
-        self.fuv.partial_cmp(&other.fuv)
+        return self.f.partial_cmp(&other);
     }
 }
 
 impl std::ops::RemAssign<f64> for TwoJet {
     fn rem_assign(&mut self, rhs: f64) {
         self.f = self.f % rhs;
-        if self.f < 0 {
+        if self.f < 0.0 {
             self.f = self.f + rhs;
         };
     }   
@@ -169,8 +156,8 @@ impl std::ops::BitXorAssign<f64> for TwoJet {
 }
 
 impl TwoJet {
-    fn new(d: f64, du: f64, dv: f64, duv: Option<f64>) -> Self {
-        return TwoJet {
+    pub fn new(d: f64, du: f64, dv: f64, duv: Option<f64>) -> Self {
+        return Self {
             f: d, fu: du, fv: dv,
             fuv: match duv {
                 Some(duv) => { duv },
@@ -178,8 +165,8 @@ impl TwoJet {
             },
         }
     }
-    fn annihilated(&self, index: i32) -> Self {
-        let mut o: TwoJet = self.clone();
+    pub fn annihilated(&self, index: i32) -> Self {
+        let mut o: Self = self.clone();
         match index {
           0 => { o.fu = 0.0 },
           1 => { o.fv = 0.0 },
@@ -187,16 +174,22 @@ impl TwoJet {
         };       o.fuv = 0.0;
         return o;
     }
-    fn annihilate(&mut self, index: i32) {
+    pub fn annihilate(&mut self, index: i32) {
         match index {
           0 => { self.fu = 0.0 },
           1 => { self.fv = 0.0 },
-          _ => { /* ????? */ },
+          _ => { /* ??????? */ },
         };
         self.fuv = 0.0;
     }
-    fn take_sin(&mut self) {
-        self.f *= 2.0 * std::f64::consts::PI;
+    pub fn interpolate(&mut self, rhs: Self, weight: Self){
+        *self *= ((weight) * (-1.0) + 1.0) + rhs * weight;
+    }
+    pub fn interpolated(&self, rhs: Self, weight: Self) -> Self {
+        return (*self) * ((weight) * (-1.0) + 1.0) + rhs * weight;
+    }
+    pub fn take_sin(&mut self) {
+        *self *= 2.0 * std::f64::consts::PI;
         
         let s: f64 =  self.f.sin();
         let c: f64 =  self.f.cos();
@@ -206,8 +199,8 @@ impl TwoJet {
         self.fv  = self.fv  * c;
         self.fuv = self.fuv * c - self.fu * self.fv * s;
     }
-    fn take_cos(&mut self) {
-        self.f *= 2 * std::f64::consts::PI;
+    pub fn take_cos(&mut self) {
+        *self *= 2.0 * std::f64::consts::PI;
         
         let s: f64 =  self.f.cos();
         let c: f64 = -self.f.sin();
@@ -217,12 +210,29 @@ impl TwoJet {
         self.fv  = self.fv  * c;
         self.fuv = self.fuv * c - self.fu * self.fv * s;
     }
-    fn sin(&self) -> TwoJet {
-        let t: TwoJet = self * 2.0 * std::f64::consts::PI;
+    pub fn sin(&self) -> Self {
+        let t: Self = (*self) * 2.0 * std::f64::consts::PI;
         let (s, c): (f64, f64) = (t.f.sin(), t.f.cos());
         return Self::new(s, c * t.fu, c * t.fv, Option::Some(c * t.fuv - s * t.fu * t.fv));
     }
-    fn df_du(&self)    -> f64 { return self.fu;  }
-    fn df_dv(&self)    -> f64 { return self.fv;  }
-    fn d2f_dudv(&self) -> f64 { return self.fuv; }
+    pub fn cos(&self) -> Self {
+        let f: f64 = self.f * 2.0 * std::f64::consts::PI;
+        
+        let s: f64 =  f.cos();
+        let c: f64 = -f.sin();
+
+        return Self {
+            f:   s,
+            fu:  self.fu  * c,
+            fv:  self.fv  * c,
+            fuv: self.fuv * c - self.fu * self.fv * s,
+        }
+    }
+    pub fn df_du(&self)    -> f64 { return self.fu;  }
+    pub fn df_dv(&self)    -> f64 { return self.fv;  }
+    pub fn d2f_dudv(&self) -> f64 { return self.fuv; }
+    pub fn print(&self) {   
+        println!("{f} ({fu} {fv})", f=self.f, fu=self.fu, fv=self.fv);
+    }
+
 }
