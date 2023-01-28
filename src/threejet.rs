@@ -12,6 +12,18 @@ pub struct ThreeJet {
     fuvv: f64,
 }
 
+impl From<TwoJet> for ThreeJet {
+    fn from(src: TwoJet) -> ThreeJet {
+        ThreeJet::new_simple(src.f().into(), src.fu().into(), src.fv().into()) 
+    }
+}
+
+impl Into<TwoJet> for ThreeJet {
+    fn into(self) -> TwoJet { TwoJet::new(self.f, self.fu, self.fv, Some(self.fuv)) }
+}
+
+impl Into<f64> for ThreeJet { fn into(self) -> f64 { self.f } }
+
 impl std::ops::Add<ThreeJet> for ThreeJet {
     type Output = Self;
     fn add(self, rhs: ThreeJet) -> Self::Output {
@@ -180,6 +192,22 @@ impl std::ops::BitXorAssign<f64> for ThreeJet {
     }
 }
 
+impl std::cmp::PartialEq<f64> for ThreeJet {
+    fn eq(&self, other: &f64) -> bool { self.f == *other }
+    fn ne(&self, other: &f64) -> bool { self.f != *other }
+}
+
+impl std::cmp::PartialOrd<f64> for ThreeJet {
+    fn ge(&self, other: &f64) -> bool { self.f >= *other }
+    fn gt(&self, other: &f64) -> bool { self.f >  *other }
+    fn le(&self, other: &f64) -> bool { self.f <= *other }
+    fn lt(&self, other: &f64) -> bool { self.f <  *other }
+    fn partial_cmp(&self, other: &f64) -> Option<std::cmp::Ordering> {
+        return self.f.partial_cmp(&other);
+    }
+}
+
+#[allow(unused)]
 impl ThreeJet {
     pub fn new(f: f64, fu: f64, fv: f64, fuu: Option<f64>, fuv: Option<f64>, fvv: Option<f64>, fuuv: Option<f64>, fuvv: Option<f64>) -> Self {
         Self {
@@ -196,6 +224,50 @@ impl ThreeJet {
     }
     pub fn zero() -> Self {
         Self { f: 0.0, fu: 0.0, fv: 0.0, fuu: 0.0, fuv: 0.0, fvv: 0.0, fuuv: 0.0, fuvv: 0.0 }
+    }
+    pub fn new_simple(f: f64, fu: f64, fv: f64) -> Self {
+        Self {
+            f:      f,
+            fu:     fu,
+            fv:     fv,
+            fuu:    0.0,
+            fuv:    0.0,
+            fvv:    0.0,
+            fuuv:   0.0,
+            fuvv:   0.0,
+        }
+    }
+    #[inline]
+    pub fn f(&self) -> f64 {
+        self.f.clone()
+    }
+    #[inline]
+    pub fn fu(&self) -> f64 {
+        self.fu.clone()
+    }
+    #[inline]
+    pub fn fv(&self) -> f64 {
+        self.fv.clone()
+    }
+    #[inline]
+    pub fn fuu(&self) -> f64 {
+        self.fuu.clone()
+    }
+    #[inline]
+    pub fn fuv(&self) -> f64 {
+        self.fuv.clone()
+    }
+    #[inline]
+    pub fn fvv(&self) -> f64 {
+        self.fvv.clone()
+    }
+    #[inline]
+    pub fn fuuv(&self) -> f64 {
+        self.fuuv.clone()
+    }
+    #[inline]
+    pub fn fuvv(&self) -> f64 {
+        self.fuvv.clone()
     }
     pub fn sin(&self) -> Self {
         let t: Self = (*self) * 2.0 * std::f64::consts::PI;
@@ -300,11 +372,12 @@ impl ThreeJet {
             },
         };
     }
-    pub fn interpolated(&self, rhs: Self, weight: Self) -> Self {
-        return (*self) * ((weight) * (-1.0) + 1.0) + rhs * weight;
-    }
     pub fn interpolate(&mut self, rhs: Self, weight: Self) {
-        *self *= ((weight) * (-1.0) + 1.0) + rhs * weight;
+        *self *= (weight * -1.0) + 1.0;
+        *self += rhs * weight;
+    }
+    pub fn interpolated(&self, rhs: Self, weight: Self) -> Self {
+        ((*self) * ((weight * -1.0) + 1.0)) + (rhs * weight)
     }
     pub fn print(&self) {
         println!("{f} ({fu} {fv})", f=self.f, fu=self.fu, fv=self.fv);

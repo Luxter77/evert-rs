@@ -6,7 +6,7 @@ pub struct TwoJet {
     pub fuv: f64,
 }
 
-impl From<TwoJet> for f64 { fn from(s: TwoJet) -> f64 { return s.f; } }
+impl Into<f64> for TwoJet { fn into(self) -> f64 { self.f } }
 
 impl std::ops::Add<TwoJet> for TwoJet {
     type Output = Self;
@@ -94,7 +94,8 @@ impl std::ops::BitXor<f64> for TwoJet {
     type Output = Self;
     fn bitxor(self, rhs: f64) -> Self::Output {
         let (x0, x1, x2): (f64, f64, f64);
-        let x0: f64 = self.f.powf(rhs);
+        
+        x0 = self.f.powf(rhs);
         
         if self.f == 0.0 {
             (x1, x2) = (0.0, 0.0);
@@ -115,7 +116,8 @@ impl std::ops::BitXor<f64> for TwoJet {
 impl std::ops::BitXorAssign<f64> for TwoJet {
     fn bitxor_assign(&mut self, rhs: f64) {
         let (x0, x1, x2): (f64, f64, f64);
-        let x0: f64 = self.f.powf(rhs);
+        
+        x0 = self.f.powf(rhs);
         
         if self.f == 0.0 {
             (x1, x2) = (0.0, 0.0);
@@ -180,6 +182,22 @@ impl TwoJet {
     pub fn zero() -> Self {
         Self { f: 0.0, fu: 0.0, fv: 0.0, fuv: 0.0 }
     }
+    #[inline]
+    pub fn f(&self) -> f64 {
+        self.f.clone()
+    }
+    #[inline]
+    pub fn fu(&self) -> f64 {
+        self.fu.clone()
+    }
+    #[inline]
+    pub fn fv(&self) -> f64 {
+        self.fv.clone()
+    }
+    #[inline]
+    pub fn fuv(&self) -> f64 {
+        self.fuv.clone()
+    }
     pub fn annihilated(&self, index: i32) -> Self {
         let mut o: Self = self.clone();
         match index {
@@ -197,11 +215,12 @@ impl TwoJet {
         };
         self.fuv = 0.0;
     }
-    pub fn interpolated(&self, rhs: Self, weight: Self) -> Self {
-        return (*self) * ((weight) * (-1.0) + 1.0) + rhs * weight;
+    pub fn interpolate(&mut self, rhs: Self, weight: Self) {
+        *self *= (weight * -1.0) + 1.0;
+        *self += rhs * weight;
     }
-    pub fn interpolate(&mut self, rhs: Self, weight: Self){
-        *self *= ((weight) * (-1.0) + 1.0) + rhs * weight;
+    pub fn interpolated(&self, rhs: Self, weight: Self) -> Self {
+        ((*self) * ((weight * -1.0) + 1.0)) + (rhs * weight)
     }
     pub fn take_sin(&mut self) {
         *self *= 2.0 * std::f64::consts::PI;
@@ -243,11 +262,10 @@ impl TwoJet {
             fuv: self.fuv * c - self.fu * self.fv * s,
         }
     }
-    pub fn df_du(&self)    -> f64 { return self.fu;  }
-    pub fn df_dv(&self)    -> f64 { return self.fv;  }
-    pub fn d2f_dudv(&self) -> f64 { return self.fuv; }
     pub fn print(&self) {   
         println!("{f} ({fu} {fv})", f=self.f, fu=self.fu, fv=self.fv);
     }
-
+    pub fn brezier_dim(&self, ps: f64, pus: f64, pvs: f64, puvs: f64) -> f64 {
+        Into::<f64>::into(*self) * ps + self.fu() * pus / 3.0 + self.fv() * pvs / 3.0 + self.fuv() * puvs / 9.0
+    }
 }
