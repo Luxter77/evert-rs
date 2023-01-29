@@ -55,9 +55,23 @@ impl std::fmt::LowerExp for CGFloat {
     }
 }
 
+pub fn str_to_i64(string: &Vec<char>, idx: &mut usize, base: u32) -> Result<i64, std::num::ParseIntError> {
+    if string.len() == 0 { unimplemented!() };
+    
+    *idx = 0;
+    
+    if string[*idx] == '-' || string[*idx] == '+' { *idx += 1; };
+    while string[*idx].is_ascii_digit() { *idx += 1; };
+    
+    return match i64::from_str_radix(string[0..*idx].into_iter().collect::<String>().as_str(), base) {
+        Ok(long) =>  Ok(long),
+        Err(err) => { *idx = 0; Err(err) },
+    };
+}
+
 mod tests {
     #[test]
-    fn main() {
+    fn test_cgfloat() {
         assert_eq!("42", format!("{}", crate::c_gformat::CGFloat(42.)));
         assert_eq!("1.23", format!("{:.3}", crate::c_gformat::CGFloat(1.2345)));
         assert_eq!("-1.23", format!("{:.3}", crate::c_gformat::CGFloat(-1.2345)));
@@ -67,5 +81,21 @@ mod tests {
         assert_eq!("-1.23e2", format!("{:+e}", crate::c_gformat::CGFloat(-123.0)));
         assert_eq!("-0", format!("{}", crate::c_gformat::CGFloat(-0.0)));
         assert_eq!("0", format!("{}", crate::c_gformat::CGFloat(0.0)));
+    }
+    #[test]
+    fn test_str_to_i64() {
+        let cases: [(&str, i64, usize); 3] = [
+            ("64adifghjwerghwrgh", 64, 2),
+            ("-1", -1, 2),
+            ("+10hola", 10, 3),
+
+        ];
+        for (str, value, ridx) in cases {
+            let mut idx: usize = 0;
+            let vc: Vec<char> = Vec::from(str).iter().map(| x: &u8 | { *x as char } ).collect();
+            let res = super::str_to_i64(&vc, &mut idx, 10).unwrap(); 
+            assert_eq!(value, res, "str_to_i64(\"{str}\", &mut idx, 10) -> {res}");
+            assert_eq!(ridx, idx, "idx shoudl have been {ridx}, but returned {idx}");
+        };
     }
 }
