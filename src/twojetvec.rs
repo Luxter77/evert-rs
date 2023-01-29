@@ -94,7 +94,6 @@ impl std::ops::MulAssign<f64> for TwoJetVec {
     }
 }
 
-#[allow(unused)]
 impl TwoJetVec {
     pub fn new(x: TwoJet, y: TwoJet, z: TwoJet) -> Self {
         Self { x, y, z }
@@ -109,6 +108,7 @@ impl TwoJetVec {
     pub fn dot(self, rhs: Self) -> TwoJet {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
+    #[allow(dead_code)]
     pub fn annihilate(&mut self, index: i32) {
         self.x.annihilate(index);
         self.y.annihilate(index);
@@ -121,6 +121,7 @@ impl TwoJetVec {
             z: self.z.annihilated(index), 
         }
     }
+    #[allow(dead_code)]
     pub fn cross(&mut self, rhs: Self) {
         self.x = self.y * rhs.z + self.z * rhs.y * -1.0;
         self.y = self.z * rhs.x + self.x * rhs.z * -1.0;
@@ -133,6 +134,7 @@ impl TwoJetVec {
             z: self.x * rhs.y + self.y * rhs.x * -1.0,
         }
     }
+    #[allow(dead_code)]
     pub fn normalize(&mut self) {
         let mut a: TwoJet = self.dot(*self);
         if a > 0.0 {
@@ -151,6 +153,7 @@ impl TwoJetVec {
         };
         return *self * a;
     }
+    #[allow(dead_code)]
     pub fn rotate_z(&mut self, angle: TwoJet) {
         let s: TwoJet = angle.sin();
         let c: TwoJet = angle.cos();
@@ -166,12 +169,14 @@ impl TwoJetVec {
             z: self.z,
         }
     }
+    #[allow(dead_code)]
     pub fn rotate_y(&mut self, angle: TwoJet) {
         let s: TwoJet = angle.sin();
         let c: TwoJet = angle.cos();
         self.x = self.x * c + self.z * s * -1.0;
         self.z = self.x * s + self.z * c;
     }
+    #[allow(dead_code)]
     pub fn rotated_y(&self, angle: TwoJet) -> Self {
         let s: TwoJet = angle.sin();
         let c: TwoJet = angle.cos();
@@ -181,12 +186,14 @@ impl TwoJetVec {
             z: self.x * s + self.z * c,
         }
     }
+    #[allow(dead_code)]
     pub fn rotate_x(&mut self, angle: TwoJet) {
         let s: TwoJet = angle.sin();
         let c: TwoJet = angle.cos();
         self.y = self.y * c + self.z * s;
         self.z = self.y * s * -1.0 + self.z * c;
     }
+    #[allow(dead_code)]
     pub fn rotated_x(&self, angle: TwoJet) -> Self {
         let s: TwoJet = angle.sin();
         let c: TwoJet = angle.cos();
@@ -196,13 +203,16 @@ impl TwoJetVec {
             z: self.y * s * -1.0 + self.z * c,
         }
     }
+    #[allow(dead_code)]
     pub fn interpolate(&mut self, rhs: Self, weight: TwoJet) {
         *self *= (weight * -1.0) + 1.0;
         *self += rhs * weight;
     }
+    #[allow(dead_code)]
     pub fn interpolated(&self, rhs: Self, weight: TwoJet) -> TwoJetVec {
         ((*self) * ((weight * -1.0) + 1.0)) + (rhs * weight)
     }
+    #[allow(dead_code)]
     pub fn lenght(&self) -> TwoJet {
         ((self.x ^ 2.0) + (self.y ^ 2.0)) ^ (0.5)
     }
@@ -224,9 +234,9 @@ impl TwoJetVec {
  		if s > 0.0 { s = (1.0 / s).sqrt(); };
         return SplinePoint::new(x, y, z, nx, ny, nz, s);
     }
-    pub fn x(&self) -> TwoJet { self.x.clone() }
-    pub fn y(&self) -> TwoJet { self.y.clone() }
-    pub fn z(&self) -> TwoJet { self.z.clone() }
+    pub fn x(&self) -> TwoJet { self.x }
+    pub fn y(&self) -> TwoJet { self.y }
+    pub fn z(&self) -> TwoJet { self.z }
     #[inline]
     pub fn calc_speed_v(&self) -> f64 {  self.x.fv().powi(2) + self.y.fv().powi(2) + self.z.fv().powi(2) }
     #[inline]
@@ -235,7 +245,7 @@ impl TwoJetVec {
 
 impl PrintableSpline for TwoJetVec {
     fn print_spline(&self, v01: TwoJetVec,  v10: TwoJetVec, v11: TwoJetVec, us: f64, vs: f64, s0: f64, s1: f64, t0: f64, t1: f64) {
-        let v00: &Self = &self;
+        let v00: &Self = self;
         if crate::nstrip::EasyAtomic::get(&crate::nstrip::BINARY) {
             let magic: [BrezierPoint; 16] = [
                 v00.brezier_point(1.0, 0.0, 0.0, 0.0),

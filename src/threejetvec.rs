@@ -87,11 +87,11 @@ impl std::ops::MulAssign<f64> for ThreeJetVec {
     }
 }
 
-#[allow(unused)]
 impl ThreeJetVec {
     pub fn new(x: ThreeJet, y: ThreeJet, z: ThreeJet) -> Self {
         Self { x, y, z }
     }
+    #[allow(unused)]
     pub fn zero() -> Self {
         Self {
             x: ThreeJet::zero(),
@@ -99,9 +99,10 @@ impl ThreeJetVec {
             z: ThreeJet::zero(),
         }
     }
-    pub fn x(&self) -> ThreeJet { self.x.clone() }
-    pub fn y(&self) -> ThreeJet { self.y.clone() }
-    pub fn z(&self) -> ThreeJet { self.z.clone() }
+    pub fn x(&self) -> ThreeJet { self.x }
+    pub fn y(&self) -> ThreeJet { self.y }
+    pub fn z(&self) -> ThreeJet { self.z }
+    #[allow(unused)]
     pub fn anihilate(&mut self, index: i32) {
         self.x.annihilate(index);
         self.y.annihilate(index);
@@ -117,11 +118,13 @@ impl ThreeJetVec {
     pub fn d(&self, index: i32) -> TwoJetVec {
         TwoJetVec::new(self.x.d(index), self.y.d(index), self.z.d(index))
     }
+    #[allow(unused)]
     pub fn cross(&mut self, rhs: Self) {
         self.x = self.y * rhs.z + self.z * rhs.y * -1.0;
         self.y = self.z * rhs.x + self.x * rhs.z * -1.0;
         self.z = self.x * rhs.y + self.y * rhs.x * -1.0;
     }
+    #[allow(unused)]
     pub fn crossed(&self, rhs: Self) -> Self {
         Self {
             x: self.y * rhs.z + self.z * rhs.y * -1.0,
@@ -129,9 +132,11 @@ impl ThreeJetVec {
             z: self.x * rhs.y + self.y * rhs.x * -1.0,
         }
     }
+    #[allow(unused)]
     pub fn dot(&self, rhs: Self) -> ThreeJet {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
+    #[allow(unused)]
     pub fn normalize(&mut self) {
         let mut a: ThreeJet = self.dot(*self);
         if a > 0.0 {
@@ -141,6 +146,7 @@ impl ThreeJetVec {
         };
         *self *= a;
     }
+    #[allow(unused)]
     pub fn normalized(&self) -> Self {
         let mut a: ThreeJet = self.dot(*self);
         if a > 0.0 {
@@ -150,12 +156,14 @@ impl ThreeJetVec {
         };
         return *self * a;
     }
+    #[allow(unused)]
     pub fn rotate_z(&mut self, angle: ThreeJet) {
         let s: ThreeJet = angle.sin();
         let c: ThreeJet = angle.cos();
         self.x = self.x * c + self.y * s;
         self.y = self.x * s * -1.0 + self.y * c;
     }
+    #[allow(unused)]
     pub fn rotated_z(&self, angle: ThreeJet) -> Self {
         let s: ThreeJet = angle.sin();
         let c: ThreeJet = angle.cos();
@@ -165,12 +173,14 @@ impl ThreeJetVec {
             z: self.z,
         }
     }
+    #[allow(unused)]
     pub fn rotate_y(&mut self, angle: ThreeJet) {
         let s: ThreeJet = angle.sin();
         let c: ThreeJet = angle.cos();
         self.x = self.x * c + self.z * s * -1.0;
         self.z = self.x * s + self.z * c;
     }
+    #[allow(unused)]
     pub fn rotated_y(&self, angle: ThreeJet) -> Self {
         let s: ThreeJet = angle.sin();
         let c: ThreeJet = angle.cos();
@@ -180,12 +190,14 @@ impl ThreeJetVec {
             z: self.x * s + self.z * c,
         }
     }
+    #[allow(unused)]
     pub fn rotate_x(&mut self, angle: ThreeJet) {
         let s: ThreeJet = angle.sin();
         let c: ThreeJet = angle.cos();
         self.y = self.y * c + self.z * s;
         self.z = self.y * s * -1.0 + self.z * c;
     }
+    #[allow(unused)]
     pub fn rotated_x(&self, angle: ThreeJet) -> Self {
         let s: ThreeJet = angle.sin();
         let c: ThreeJet = angle.cos();
@@ -195,6 +207,7 @@ impl ThreeJetVec {
             z: self.y * s * -1.0 + self.z * c,
         }
     }
+    #[allow(unused)]
     pub fn interpolate(&mut self, rhs: Self, weight: ThreeJet) {
         *self *= (weight * -1.0) + 1.0;
         *self += rhs * weight;
@@ -202,6 +215,7 @@ impl ThreeJetVec {
     pub fn interpolated(&self, rhs: Self, weight: ThreeJet) -> ThreeJetVec {
         ((*self) * ((weight * -1.0) + 1.0)) + (rhs * weight)
     }
+    #[allow(unused)]
     pub fn lenght(&self) -> ThreeJet {
         ((self.x ^ 2.0) + (self.y ^ 2.0)) ^ (0.5)
     }

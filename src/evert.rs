@@ -1,5 +1,7 @@
+#![allow(clippy::needless_return)] // NO
+
 use clap::Parser;
-use sphere::STO;
+use sphere::Sto;
 
 mod twojet;
 mod twojetvec;
@@ -111,26 +113,26 @@ fn main() {
     let uncorrstart: f64 =  args.uncorr;
 
     if bendtime >= 0.0 {
-        spline::print_scene(STO::BendIn, umin, umax, adu, vmin, vmax, adv, bendtime, parts);
+        spline::print_scene(Sto::BendIn, umin, umax, adu, vmin, vmax, adv, bendtime, parts);
     } else {
         /* time = (time - howfar) / chunk */
         if !args.bscene || args.scene {
             if time >= uncorrstart && uncorrstart >= 0.0 {
                 let t: f64 = (time - uncorrstart) / (1.0 - uncorrstart);
-                spline::print_scene(STO::UnCorrugate, umin, umax, adu, vmin, vmax, adv, t, parts);
+                spline::print_scene(Sto::UnCorrugate, umin, umax, adu, vmin, vmax, adv, t, parts);
             };
         } else if time >= unpushstart && unpushstart >= 0.0 {
             let t: f64 = (time - unpushstart) / (if uncorrstart < 0.0 { 1.0 } else { uncorrstart } - unpushstart); 
-            spline::print_scene(STO::UnPush, umin, umax, adu, vmin, vmax, adv, t, parts);
+            spline::print_scene(Sto::UnPush, umin, umax, adu, vmin, vmax, adv, t, parts);
         } else if time >= twiststart && twiststart >= 0.0 {
             let t: f64 = (time - twiststart) / (if unpushstart < 0.0 { 1.0 } else { unpushstart } - twiststart);
-            spline::print_scene(STO::Twist, umin, umax, adu, vmin, vmax, adv, t, parts);
+            spline::print_scene(Sto::Twist, umin, umax, adu, vmin, vmax, adv, t, parts);
         } else if time >= pushstart && pushstart >= 0.0 {
             let t: f64 = (time - pushstart) / (if twiststart < 0.0 { 1.0 } else { twiststart } - pushstart);
-            spline::print_scene(STO::PushThrough, umin, umax, adu, vmin, vmax, adv, t, parts);
+            spline::print_scene(Sto::PushThrough, umin, umax, adu, vmin, vmax, adv, t, parts);
         } else if time >= corrstart && corrstart >= 0.0 {
             let t: f64 = (time - corrstart) / (if pushstart < 0.0 { 1.0 } else { pushstart } - corrstart);
-            spline::print_scene(STO::Corrugate, umin, umax, adu, vmin, vmax, adv, t, parts);
+            spline::print_scene(Sto::Corrugate, umin, umax, adu, vmin, vmax, adv, t, parts);
         };
     }
 }

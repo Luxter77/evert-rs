@@ -7,7 +7,7 @@ const MAX_PRECISION: usize = 15;
 
 impl CGFloat {
     fn format(&self, f: &mut std::fmt::Formatter<'_>, force_exponent: bool) -> std::fmt::Result {
-        let sigdigs: u8 = f.precision().unwrap_or(8).max(1).min(MAX_PRECISION).try_into().unwrap();
+        let sigdigs: u8 = f.precision().unwrap_or(8).clamp(1, MAX_PRECISION).try_into().unwrap();
         let num = round(self.0, sigdigs.into());
         if force_exponent || magnitude(num) > sigdigs.into() || (num != 0.0 && num.abs() < 0.0001) {
             write!(f, "{:e}", num)
@@ -56,15 +56,15 @@ impl std::fmt::LowerExp for CGFloat {
 }
 
 pub fn str_to_i64(string: &Vec<char>, idx: &mut usize, base: u32) -> Result<i64, std::num::ParseIntError> {
-    if string.len() == 0 { unimplemented!() };
+    if string.is_empty() { unimplemented!() };
     
     *idx = 0;
     
     if string[*idx] == '-' || string[*idx] == '+' { *idx += 1; };
-    while string[*idx].is_ascii_digit() { *idx += 1; };
+    while string.get(*idx).unwrap_or(&'!').is_ascii_digit() { *idx += 1; };
     
-    return match i64::from_str_radix(string[0..*idx].into_iter().collect::<String>().as_str(), base) {
-        Ok(long) =>  Ok(long),
+    return match i64::from_str_radix(string[0..=*idx-1].iter().collect::<String>().as_str(), base) {
+        Ok(long) =>  { Ok(long) },
         Err(err) => { *idx = 0; Err(err) },
     };
 }
@@ -84,11 +84,13 @@ mod tests {
     }
     #[test]
     fn test_str_to_i64() {
-        let cases: [(&str, i64, usize); 3] = [
+        let cases: [(&str, i64, usize); 6] = [
+            ("64adifghjwerghwrgh", 64, 2),
             ("64adifghjwerghwrgh", 64, 2),
             ("-1", -1, 2),
             ("+10hola", 10, 3),
-
+            ("+100hola", 100, 4),
+            ("100h123ola", 100, 3),
         ];
         for (str, value, ridx) in cases {
             let mut idx: usize = 0;

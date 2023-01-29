@@ -14,15 +14,15 @@ pub struct ThreeJet {
 
 impl From<TwoJet> for ThreeJet {
     fn from(src: TwoJet) -> ThreeJet {
-        ThreeJet::new_simple(src.f().into(), src.fu().into(), src.fv().into()) 
+        ThreeJet::new_simple(src.f(), src.fu(), src.fv()) 
     }
 }
 
-impl Into<TwoJet> for ThreeJet {
-    fn into(self) -> TwoJet { TwoJet::new(self.f, self.fu, self.fv, Some(self.fuv)) }
+impl From<ThreeJet> for TwoJet {
+    fn from(val: ThreeJet) -> Self { TwoJet::new(val.f, val.fu, val.fv, Some(val.fuv)) }
 }
 
-impl Into<f64> for ThreeJet { fn into(self) -> f64 { self.f } }
+impl From<ThreeJet> for f64 { fn from(val: ThreeJet) -> Self { val.f } }
 
 impl std::ops::Add<ThreeJet> for ThreeJet {
     type Output = Self;
@@ -85,7 +85,7 @@ impl std::ops::MulAssign<ThreeJet> for ThreeJet {
 impl std::ops::Add<f64> for ThreeJet {
     type Output = Self;
     fn add(self, rhs: f64) -> Self::Output {
-        let mut o: Self = self.clone();
+        let mut o: Self = self;
         o.f += rhs;
         return o;
     }
@@ -129,10 +129,10 @@ impl std::ops::MulAssign<f64> for ThreeJet {
 impl std::ops::Rem<f64> for ThreeJet {
     type Output = Self;
     fn rem(self, rhs: f64) -> Self {
-        let mut o: Self = self.clone();
+        let mut o: Self = self;
         o.f %= rhs;
         if o.f < 0.0 {
-            o.f = o.f + rhs;
+            o.f += rhs;
         };
         return o;
     }
@@ -142,7 +142,7 @@ impl std::ops::RemAssign<f64> for ThreeJet {
     fn rem_assign(&mut self, rhs: f64) {
         self.f = self.f % rhs;
         if self.f < 0.0 {
-            self.f = self.f + rhs;
+            self.f += rhs;
         };
     }
 }
@@ -181,20 +181,19 @@ impl std::ops::BitXorAssign<f64> for ThreeJet {
         let x2: f64 = if self.f == 0.0 { 0.0 } else { x1 * (rhs - 1.0) / self.f };
         let x3: f64 = if self.f == 0.0 { 0.0 } else { x2 * (rhs - 2.0) / self.f };
 
-        self.f    = x0;
-        self.fu   = x1 * self.fu;
-        self.fv   = x1 * self.fv;
-        self.fuu  = x1 * self.fuu  + x2 *        self.fu * self.fu;
-        self.fuv  = x1 * self.fuv  + x2 *        self.fu * self.fv;
-        self.fvv  = x1 * self.fvv  + x2 *        self.fv * self.fv;
-        self.fuuv = x1 * self.fuuv + x2 * (2.0 * self.fu * self.fuv + self.fv * self.fuu) + x3 * self.fu * self.fu * self.fv;
-        self.fuvv = x1 * self.fuvv + x2 * (2.0 * self.fv * self.fuv + self.fu * self.fvv) + x3 * self.fu * self.fv * self.fv;
+        self.f     = x0;
+        self.fu   *= x1;
+        self.fv   *= x1;
+        self.fuu   = x1 * self.fuu  + x2 *        self.fu * self.fu;
+        self.fuv   = x1 * self.fuv  + x2 *        self.fu * self.fv;
+        self.fvv   = x1 * self.fvv  + x2 *        self.fv * self.fv;
+        self.fuuv  = x1 * self.fuuv + x2 * (2.0 * self.fu * self.fuv + self.fv * self.fuu) + x3 * self.fu * self.fu * self.fv;
+        self.fuvv  = x1 * self.fuvv + x2 * (2.0 * self.fv * self.fuv + self.fu * self.fvv) + x3 * self.fu * self.fv * self.fv;
     }
 }
 
 impl std::cmp::PartialEq<f64> for ThreeJet {
     fn eq(&self, other: &f64) -> bool { self.f == *other }
-    fn ne(&self, other: &f64) -> bool { self.f != *other }
 }
 
 impl std::cmp::PartialOrd<f64> for ThreeJet {
@@ -203,33 +202,32 @@ impl std::cmp::PartialOrd<f64> for ThreeJet {
     fn le(&self, other: &f64) -> bool { self.f <= *other }
     fn lt(&self, other: &f64) -> bool { self.f <  *other }
     fn partial_cmp(&self, other: &f64) -> Option<std::cmp::Ordering> {
-        return self.f.partial_cmp(&other);
+        return self.f.partial_cmp(other);
     }
 }
 
-#[allow(unused)]
 impl ThreeJet {
-    pub fn new(f: f64, fu: f64, fv: f64, fuu: Option<f64>, fuv: Option<f64>, fvv: Option<f64>, fuuv: Option<f64>, fuvv: Option<f64>) -> Self {
-        Self {
-            f:      f,
-            fu:     fu,
-            fv:     fv,
-            fuu:    fuu.unwrap_or(0.0),
-            fuv:    fuv.unwrap_or(0.0),
-            fvv:    fvv.unwrap_or(0.0),
-            fuuv:   fuuv.unwrap_or(0.0),
-            fuvv:   fuvv.unwrap_or(0.0),
-            
-        }
-    }
+    // nobody uses this lol
+    // pub fn new(f: f64, fu: f64, fv: f64, fuu: Option<f64>, fuv: Option<f64>, fvv: Option<f64>, fuuv: Option<f64>, fuvv: Option<f64>) -> Self {
+    //     Self {
+    //         f,
+    //         fu,
+    //         fv,
+    //         fuu:    fuu.unwrap_or(0.0),
+    //         fuv:    fuv.unwrap_or(0.0),
+    //         fvv:    fvv.unwrap_or(0.0),
+    //         fuuv:   fuuv.unwrap_or(0.0),
+    //         fuvv:   fuvv.unwrap_or(0.0),
+    //     }
+    // }
     pub fn zero() -> Self {
         Self { f: 0.0, fu: 0.0, fv: 0.0, fuu: 0.0, fuv: 0.0, fvv: 0.0, fuuv: 0.0, fuvv: 0.0 }
     }
     pub fn new_simple(f: f64, fu: f64, fv: f64) -> Self {
         Self {
-            f:      f,
-            fu:     fu,
-            fv:     fv,
+            f,
+            fu,
+            fv,
             fuu:    0.0,
             fuv:    0.0,
             fvv:    0.0,
@@ -237,38 +235,14 @@ impl ThreeJet {
             fuvv:   0.0,
         }
     }
-    #[inline]
-    pub fn f(&self) -> f64 {
-        self.f.clone()
-    }
-    #[inline]
-    pub fn fu(&self) -> f64 {
-        self.fu.clone()
-    }
-    #[inline]
-    pub fn fv(&self) -> f64 {
-        self.fv.clone()
-    }
-    #[inline]
-    pub fn fuu(&self) -> f64 {
-        self.fuu.clone()
-    }
-    #[inline]
-    pub fn fuv(&self) -> f64 {
-        self.fuv.clone()
-    }
-    #[inline]
-    pub fn fvv(&self) -> f64 {
-        self.fvv.clone()
-    }
-    #[inline]
-    pub fn fuuv(&self) -> f64 {
-        self.fuuv.clone()
-    }
-    #[inline]
-    pub fn fuvv(&self) -> f64 {
-        self.fuvv.clone()
-    }
+    #[inline] pub fn f(&self) -> f64 { self.f }
+    #[inline] pub fn fu(&self) -> f64 { self.fu }
+    #[inline] pub fn fv(&self) -> f64 { self.fv }
+    #[inline] pub fn fuu(&self) -> f64 { self.fuu }
+    #[inline] pub fn fuv(&self) -> f64 { self.fuv }
+    #[inline] pub fn fvv(&self) -> f64 { self.fvv }
+    #[inline] pub fn fuuv(&self) -> f64 { self.fuuv }
+    #[inline] pub fn fuvv(&self) -> f64 { self.fuvv }
     pub fn sin(&self) -> Self {
         let t: Self = (*self) * 2.0 * std::f64::consts::PI;
         let (s, c): (f64, f64) = (t.f.sin(), t.f.cos());

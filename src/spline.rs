@@ -1,39 +1,58 @@
-// TODO: REMOVE THIS ALLOW BEFORE PUSH
 use crate::{
 	nstrip::{ N_STRIPS, BREZIER, BINARY, EasyAtomic },
 	twojetvec::TwoJetVec,
 	threejet::ThreeJet,
-	sphere::{Eversible, STO},
+	sphere::{Eversible, Sto},
 };
 
 static PART_POS: i32 = 0x1;
 static PART_NEG: i32 = 0x2;
 
-type SpeedVec = Vec<f64>;
-trait PopulableSpeed {
-	fn populate_speedv(&mut self, func: STO, ju: usize, u: f64, t: f64);
-}
-
 pub trait PrintableSpline {
+	#[allow(clippy::too_many_arguments)] // aguantese como hombre
 	fn print_spline(&self, v01: TwoJetVec,  v10: TwoJetVec, v11: TwoJetVec, us: f64, vs: f64, s0: f64, s1: f64, t0: f64, t1: f64);
 }
 
-impl PopulableSpeed for SpeedVec {
-	fn populate_speedv(&mut self, func: STO, ju: usize, u: f64, t: f64) {
-		let n: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
-		let v: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 1.0);
-		self[ju] = match func {
-			STO::Corrugate => { n.corrugate(v, t) },
-			STO::PushThrough => { n.push_through(v, t) },
-			STO::Twist => { n.twist(v, t) },
-			STO::UnPush => { n.unpush(v, t) },
-			STO::UnCorrugate => { n.uncorrugate(v, t) },
-			STO::BendIn => { n.bend_in(v, t) },
-		}.calc_speed_v();
-	}
+type TwoJetVVV = Vec<Vec<TwoJetVec>>;
+type SpeedVec = Vec<f64>;
+type AccelVec = Vec<SpeedVec>;
+
+fn calc_speed_v(oper: Sto, u: f64, t: f64) -> f64 {
+	let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
+	let vu: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 0.1);
+
+	let o: f64 = match oper {
+    	Sto::Corrugate => { nu.corrugate(vu, t) },
+    	Sto::PushThrough => { nu.push_through(vu, t) },
+    	Sto::Twist => { nu.twist(vu, t) },
+    	Sto::UnPush => { nu.unpush(vu, t) },
+    	Sto::UnCorrugate => { nu.uncorrugate(vu, t) },
+    	Sto::BendIn => { nu.bend_in(vu, t) },
+	}.calc_speed_v();
+
+	if o != 0.0 {
+		return o;
+	} else {
+		return calc_speed_v(oper, u + if u < 1.0 { 1e-9 } else { -1e-9 }, t);
+	};
 }
 
-pub fn print_scene(oper: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, parts: Vec<char>) { 
+fn calc_speed_u(oper: Sto, u: f64, v: f64, t: f64) -> TwoJetVec {
+	let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
+	let vu: ThreeJet = ThreeJet::new_simple(v, 0.0, 1.0);
+
+	return match oper {
+    	Sto::Corrugate => { nu.corrugate(vu, t) },
+    	Sto::PushThrough => { nu.push_through(vu, t) },
+    	Sto::Twist => { nu.twist(vu, t) },
+    	Sto::UnPush => { nu.unpush(vu, t) },
+    	Sto::UnCorrugate => { nu.uncorrugate(vu, t) },
+    	Sto::BendIn => { nu.bend_in(vu, t) },
+	};
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, parts: Vec<char>) { 
 	let (mut u, mut v): (f64, f64);
 	let (mut ju, mut ku): (usize, usize);
 	
@@ -43,87 +62,42 @@ pub fn print_scene(oper: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 	let du: f64 = (umax - umin) / jmax as f64;
 	let dv: f64 = (vmax - vmin) / kmax as f64;
 
-	let mut values: Vec<Vec<TwoJetVec>>	= Vec::with_capacity((jmax + 1) as usize);
-	let mut speedu: Vec<Vec<f64>>       = Vec::with_capacity((jmax + 1) as usize);
-	let mut speedv: Vec<f64> 			= Vec::with_capacity((jmax + 1) as usize);
-
-	let mut partlist: Vec<char> = vec![char::from(0); parts.len()];
+	let mut values: TwoJetVVV = Vec::with_capacity((jmax + 1) as usize);
+	let mut speedu: AccelVec  = Vec::with_capacity((jmax + 1) as usize);
+	let mut speedv: SpeedVec  = Vec::with_capacity((jmax + 1) as usize);
 
 	for j in 0..jmax {
 		ju = j as usize;
 		u = umin + du * (j as f64);
 
-		values[ju] = vec![TwoJetVec::zero(); (kmax + 1) as usize];
-		speedu[ju] = vec![0.0; (kmax + 1) as usize];
+		values.push(vec![TwoJetVec::zero(); (kmax + 1) as usize]);
+		speedu.push(vec![0.0; (kmax + 1) as usize]);
+		speedv.push(calc_speed_v(oper, u, t));
 
-		let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
-		let vu: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 1.0);
-
-		speedv[ju] = match oper {
-			STO::Corrugate => { nu.corrugate(vu, t) },
-			STO::PushThrough => { nu.push_through(vu, t) },
-			STO::Twist => { nu.twist(vu, t) },
-			STO::UnPush => { nu.unpush(vu, t) },
-			STO::UnCorrugate => { nu.uncorrugate(vu, t) },
-			STO::BendIn => { nu.bend_in(vu, t) },
-		}.calc_speed_v();
-
-		if speedv[ju] == 0.0 {
-			/* Perturb a bit, hoping to avoid degeneracy */
-			
-			if u < 1.0 {
-				u +=  1e-9_f64
-			} else {
-				u += -1e-9_f64
-			};
-
-			let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
-			let vu: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 1.0);
-
-			speedv[ju] = match oper {
-				STO::Corrugate => { nu.corrugate(vu, t) },
-				STO::PushThrough => { nu.push_through(vu, t) },
-				STO::Twist => { nu.twist(vu, t) },
-				STO::UnPush => { nu.unpush(vu, t) },
-				STO::UnCorrugate => { nu.uncorrugate(vu, t) },
-				STO::BendIn => { nu.bend_in(vu, t) },
-			}.calc_speed_v()
-		};
-		
 		for k in 0..kmax {
-			ku = k as usize;
 			v = vmin + dv * k as f64;
-
-			let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
-			let vu: ThreeJet = ThreeJet::new_simple(v, 0.0, 1.0);
-
-			values[ju][ku] = match oper {
-				STO::Corrugate => { nu.corrugate(vu, t) },
-				STO::PushThrough => { nu.push_through(vu, t) },
-				STO::Twist => { nu.twist(vu, t) },
-				STO::UnPush => { nu.unpush(vu, t) },
-				STO::UnCorrugate => { nu.uncorrugate(vu, t) },
-				STO::BendIn => { nu.bend_in(vu, t) },
-			};
-
-			speedu[ju][ku] = values[ju][ku].calc_speed_u();
-		}
-	}
+			ku = k as usize;
+			values[ju][ku] = calc_speed_u(oper, u, v, t);
+			speedu[ju][ju] = values[ju][ku].calc_speed_u();
+		};
+	};
 
 	// println!("Declare \"speeds\" \"varying float\"");
 	// println!("Declare \"speedt\" \"varying float\"");
-		if !parts.len().eq(&0) {
+	if !parts.len().eq(&0) {
 		/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
-			* complete sphere. */
-		if parse_parts(&mut partlist, parts) { return };
+		 * complete sphere. */
+
+		let partlist: Vec<char> = parse_parts(parts);
+		assert!(!partlist.is_empty());
 
 		println!("{{ INST transforms {{ TLIST");
 		
 		let mut j = -1;
 		while j <= 1 { j += 2; // ???
-			for k in 0..(N_STRIPS.get() as usize) {
+			for (k, part) in partlist.iter().enumerate().take(N_STRIPS.get() as usize) {
 				let sign: i32 = if j < 0 { PART_NEG } else { PART_POS };
-				if (partlist[k] as i32 & sign) > 0 {
+				if (*part as i32 & sign) > 0 {
 					let jk: f64 = if j < 0 { N_STRIPS.get() as f64 - 1.0 - k as f64 } else { k as f64 };
 					let t: f64 = 2.0 * std::f64::consts::PI * jk / N_STRIPS.get() as f64;
 					let s: f64 = t.sin();
@@ -170,38 +144,39 @@ pub fn print_scene(oper: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 			std::io::Write::write(&mut std::io::stdout(), &nu.to_be_bytes()).unwrap();
 			std::io::Write::write(&mut std::io::stdout(), &nv.to_be_bytes()).unwrap();
 		} else {
-			println!("%{:.} %{:.}\n", nu, nv);
+			println!("%{} %{}\n", nu, nv);
 		}
-		for j in 0..jmax as usize {
-			for k in 0..kmax as usize {
-				print!("{}", values[j][k].point(None)); }
+		for valuej in values.iter().take(jmax as usize) {
+			for valuejk in valuej.iter().take(kmax as usize) {
+				print!("{}",valuejk.point(None)); }
 			if !BINARY.get() { println!() };
 		}
 	}
 }
 
-fn parse_parts(partlist: &mut Vec<char>, parts: Vec<char>) -> bool {
+fn parse_parts(parts: Vec<char>) -> Vec<char> {
 	/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
 	 * complete sphere.  */
+	let mut partlist: Vec<char> = Vec::new();
 	let mut sign: char = '!';
 	let mut bits: i32;
 
+	let lim: usize = parts.len();
 	let mut idx: usize = 0;
-	loop {
+
+	while idx < lim {
 		if parts[idx] == ' ' || parts[idx] == ',' {
 			idx += 1;
-			sign = parts[idx];
+			sign = dbg!(parts[idx]);
 			continue;
 		};
 
-		if sign == '+' {
-			bits = PART_POS;
-		} else if sign == '-' {
-			bits = PART_NEG;
-		} else {
-			bits = PART_POS | PART_NEG;
-			idx -= 1;
+		if sign == '+' {		bits = PART_POS;
+		} else if sign == '-' { bits = PART_NEG;
+		} else {				bits = PART_POS | PART_NEG;
+			idx = idx.overflowing_sub(1).0.clamp(0, lim-1);
 		};
+
 		if parts[idx] == '*' {
 			for j in 0..N_STRIPS.get() as usize {
 				partlist[j] = (*partlist.get(j).unwrap_or(&char::from(0)) as u8 | bits as u8) as char;
@@ -212,8 +187,10 @@ fn parse_parts(partlist: &mut Vec<char>, parts: Vec<char>) -> bool {
  			let ji: i64 = crate::c_gformat::str_to_i64(&parts, &mut ncp, 10).expect("Invalid number passed to -parts argument");
  			if idx == ncp { panic!("evert -parts: expected string with alternating signs and strip numbers"); };
  			if ji < 0 || ji >= N_STRIPS.get().into() { panic!("evert -parts: bad strip number {ji}; must be in range 0..{n}\n", ji=ji, n=N_STRIPS.get() - 1); };
- 			partlist[ji as usize] = (*partlist.get(ji as usize).unwrap_or(&char::from(0)) as u8 | bits as u8) as char;
+ 			let element: char = (*partlist.get(ji as usize).unwrap_or(&char::from(0)) as u8 | bits as u8) as char;
+			partlist.insert(ji as usize, element);
  			idx = ncp;
  		};
 	};
+	return partlist;
 }

@@ -1,7 +1,8 @@
 use crate::{threejet::ThreeJet, twojetvec::TwoJetVec, threejetvec::ThreeJetVec, figureeight::add_figure_eight};
 
 /// Surface Time Operations
-pub enum STO {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Sto {
     Corrugate,
     PushThrough,
     Twist,
@@ -188,32 +189,32 @@ impl Eversible for ThreeJet {
         let t: ThreeJet = Self::t_interp(t);
         return add_figure_eight(
             self.stage_1(Self::new_simple(0.0, 0.0, 1.0)),
-            (*self).into(), rhs.into(), self.ff_interp() * Self::from(t), self.fs_interp()
+            *self, rhs.into(), self.ff_interp() * t, self.fs_interp()
         );
     }
     fn push_through(&self, rhs: Self, t: f64) -> TwoJetVec {
         return add_figure_eight(
             self.scene_12(Self::new_simple(0.0, 0.0, 1.0), t),
-            (*self).into(), rhs.into(), self.ff_interp(), self.fs_interp()
+            *self, rhs.into(), self.ff_interp(), self.fs_interp()
         );
     }
     fn twist(&self, rhs: Self, t: f64) -> TwoJetVec {
         return add_figure_eight(
             self.scene_23(Self::new_simple(0.0, 0.0, 1.0), t),
-            (*self).into(), rhs.into(), self.ff_interp(), self.fs_interp()
+            *self, rhs.into(), self.ff_interp(), self.fs_interp()
         );
     }
     fn unpush(&self, rhs: Self, t: f64) -> TwoJetVec {
         return add_figure_eight(
             self.scene_34(Self::new_simple(0.0, 0.0, 1.0), t),
-            (*self).into(), rhs.into(), self.ff_interp(), self.fs_interp()
+            *self, rhs.into(), self.ff_interp(), self.fs_interp()
         );
     }
     fn uncorrugate(&self, rhs: Self, t: f64) -> TwoJetVec {
         let t: ThreeJet = Self::t_interp(t * -1.0 + 1.0);
         return add_figure_eight(
             self.stage_4(Self::new_simple(0.0, 0.0, 1.0)),
-            (*self).into(), rhs.into(), self.ff_interp() * t, self.fs_interp()
+            *self, rhs.into(), self.ff_interp() * t, self.fs_interp()
         );
     }
 }
