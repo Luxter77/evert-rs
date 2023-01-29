@@ -215,6 +215,7 @@ impl TwoJet {
         };
         self.fuv = 0.0;
     }
+    #[allow(unused)]
     pub fn interpolate(&mut self, rhs: Self, weight: Self) {
         *self *= (weight * -1.0) + 1.0;
         *self += rhs * weight;
@@ -222,6 +223,7 @@ impl TwoJet {
     pub fn interpolated(&self, rhs: Self, weight: Self) -> Self {
         ((*self) * ((weight * -1.0) + 1.0)) + (rhs * weight)
     }
+    #[allow(unused)]
     pub fn take_sin(&mut self) {
         *self *= 2.0 * std::f64::consts::PI;
         
@@ -233,6 +235,7 @@ impl TwoJet {
         self.fv  = self.fv  * c;
         self.fuv = self.fuv * c - self.fu * self.fv * s;
     }
+    #[allow(unused)]
     pub fn take_cos(&mut self) {
         *self *= 2.0 * std::f64::consts::PI;
         
@@ -262,6 +265,7 @@ impl TwoJet {
             fuv: self.fuv * c - self.fu * self.fv * s,
         }
     }
+    #[allow(unused)]
     pub fn print(&self) {   
         println!("{f} ({fu} {fv})", f=self.f, fu=self.fu, fv=self.fv);
     }

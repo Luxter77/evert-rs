@@ -14,8 +14,10 @@ impl std::fmt::Display for BrezierPoint {
 
 impl BrezierPoint {
     pub fn new(x: f64, y: f64, z: f64 ) -> Self { Self { x, y, z, ftm: FormatType::CF } }
+    #[allow(unused)]
     pub fn zero() -> Self { Self { x: 0.0, y: 0.0, z: 0.0, ftm: FormatType::CF } }
     pub fn g(mut self) -> Self { self.ftm = FormatType::CG; return self; }
+    #[allow(unused)]    
     pub fn f(mut self) -> Self { self.ftm = FormatType::CF; return self; }
     pub fn as_bytes(&self) -> [u8; 24] { [self.x.to_be_bytes(), self.y.to_be_bytes(), self.z.to_be_bytes()].concat().try_into().unwrap() }
 }
@@ -30,6 +32,7 @@ impl std::fmt::Display for SplinePoint {
 
 impl SplinePoint {
     pub fn new(x: f64, y: f64, z: f64, nx: f64, ny: f64, nz: f64, s: f64) -> Self { Self { x, y, z, nx, ny, nz, s } }
+    #[allow(unused)]
     pub fn zero() -> Self { Self { x:  0.0, y:  0.0, z:  0.0, nx: 0.0, ny: 0.0, nz: 0.0, s: 0.0 } }
     // pub fn g(self) -> Self { Self { x: self.x, y: self.y, z: self.z, nx: self.nx, ny: self.ny, nz: self.nz, s: self.s, g: true } }
     // pub fn f(self) -> Self { Self { x: self.x, y: self.y, z: self.z, nx: self.nx, ny: self.ny, nz: self.nz, s: self.s, g: true } }

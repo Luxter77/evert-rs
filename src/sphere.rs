@@ -5,8 +5,8 @@ pub enum STO {
     Corrugate,
     PushThrough,
     Twist,
-    Unpush,
-    Uncorrugate,
+    UnPush,
+    UnCorrugate,
     BendIn,
 }
 

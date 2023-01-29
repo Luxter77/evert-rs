@@ -9,17 +9,16 @@ use crate::{
 static PART_POS: i32 = 0x1;
 static PART_NEG: i32 = 0x2;
 
+type SpeedVec = Vec<f64>;
 trait PopulableSpeed {
 	fn populate_speedv(&mut self, func: STO, ju: usize, u: f64, t: f64);
 }
-
-type SpeedVec = Vec<f64>;
 
 pub trait PrintableSpline {
 	fn print_spline(&self, v01: TwoJetVec,  v10: TwoJetVec, v11: TwoJetVec, us: f64, vs: f64, s0: f64, s1: f64, t0: f64, t1: f64);
 }
 
-impl PopulableSpeed for Vec<f64> {
+impl PopulableSpeed for SpeedVec {
 	fn populate_speedv(&mut self, func: STO, ju: usize, u: f64, t: f64) {
 		let n: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
 		let v: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 1.0);
@@ -27,14 +26,14 @@ impl PopulableSpeed for Vec<f64> {
 			STO::Corrugate => { n.corrugate(v, t) },
 			STO::PushThrough => { n.push_through(v, t) },
 			STO::Twist => { n.twist(v, t) },
-			STO::Unpush => { n.unpush(v, t) },
-			STO::Uncorrugate => { n.uncorrugate(v, t) },
+			STO::UnPush => { n.unpush(v, t) },
+			STO::UnCorrugate => { n.uncorrugate(v, t) },
 			STO::BendIn => { n.bend_in(v, t) },
 		}.calc_speed_v();
 	}
 }
 
-fn print_scene(func: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, parts: Vec<char>) { 
+pub fn print_scene(oper: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, adv: f64, t: f64, parts: Vec<char>) { 
 	let (mut u, mut v): (f64, f64);
 	let (mut ju, mut ku): (usize, usize);
 	
@@ -60,12 +59,12 @@ fn print_scene(func: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, 
 		let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
 		let vu: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 1.0);
 
-		speedv[ju] = match func {
+		speedv[ju] = match oper {
 			STO::Corrugate => { nu.corrugate(vu, t) },
 			STO::PushThrough => { nu.push_through(vu, t) },
 			STO::Twist => { nu.twist(vu, t) },
-			STO::Unpush => { nu.unpush(vu, t) },
-			STO::Uncorrugate => { nu.uncorrugate(vu, t) },
+			STO::UnPush => { nu.unpush(vu, t) },
+			STO::UnCorrugate => { nu.uncorrugate(vu, t) },
 			STO::BendIn => { nu.bend_in(vu, t) },
 		}.calc_speed_v();
 
@@ -81,12 +80,12 @@ fn print_scene(func: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, 
 			let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
 			let vu: ThreeJet = ThreeJet::new_simple(0.0, 0.0, 1.0);
 
-			speedv[ju] = match func {
+			speedv[ju] = match oper {
 				STO::Corrugate => { nu.corrugate(vu, t) },
 				STO::PushThrough => { nu.push_through(vu, t) },
 				STO::Twist => { nu.twist(vu, t) },
-				STO::Unpush => { nu.unpush(vu, t) },
-				STO::Uncorrugate => { nu.uncorrugate(vu, t) },
+				STO::UnPush => { nu.unpush(vu, t) },
+				STO::UnCorrugate => { nu.uncorrugate(vu, t) },
 				STO::BendIn => { nu.bend_in(vu, t) },
 			}.calc_speed_v()
 		};
@@ -98,12 +97,12 @@ fn print_scene(func: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, 
 			let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
 			let vu: ThreeJet = ThreeJet::new_simple(v, 0.0, 1.0);
 
-			values[ju][ku] = match func {
+			values[ju][ku] = match oper {
 				STO::Corrugate => { nu.corrugate(vu, t) },
 				STO::PushThrough => { nu.push_through(vu, t) },
 				STO::Twist => { nu.twist(vu, t) },
-				STO::Unpush => { nu.unpush(vu, t) },
-				STO::Uncorrugate => { nu.uncorrugate(vu, t) },
+				STO::UnPush => { nu.unpush(vu, t) },
+				STO::UnCorrugate => { nu.uncorrugate(vu, t) },
 				STO::BendIn => { nu.bend_in(vu, t) },
 			};
 
@@ -168,8 +167,8 @@ fn print_scene(func: STO, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f64, 
 		println!("{{ NMESH{}", if BINARY.get() { " BINARY" } else { "" });
 
 		if BINARY.get() {
-			std::io::Write::write(&mut std::io::stdout(), &nu.to_be_bytes());
-			std::io::Write::write(&mut std::io::stdout(), &nv.to_be_bytes());
+			std::io::Write::write(&mut std::io::stdout(), &nu.to_be_bytes()).unwrap();
+			std::io::Write::write(&mut std::io::stdout(), &nv.to_be_bytes()).unwrap();
 		} else {
 			println!("%{:.} %{:.}\n", nu, nv);
 		}
@@ -186,7 +185,6 @@ fn parse_parts(partlist: &mut Vec<char>, parts: Vec<char>) -> bool {
 	 * complete sphere.  */
 	let mut sign: char = '!';
 	let mut bits: i32;
-	let mut j:    usize;
 
 	let mut idx: usize = 0;
 	loop {
