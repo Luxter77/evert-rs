@@ -2,11 +2,11 @@ use crate::{
 	nstrip::{ N_STRIPS, BREZIER, BINARY, EasyAtomic },
 	twojetvec::TwoJetVec,
 	threejet::ThreeJet,
-	sphere::{Eversible, Sto},
+	sphere::{Eversible, Sto}, c_gformat::str_to_i64,
 };
 
-static PART_POS: i32 = 0x1;
-static PART_NEG: i32 = 0x2;
+static PART_POS: u8 = 0x1;
+static PART_NEG: u8 = 0x2;
 
 pub trait PrintableSpline {
 	#[allow(clippy::too_many_arguments)] // aguantese como hombre
@@ -14,8 +14,45 @@ pub trait PrintableSpline {
 }
 
 type TwoJetVVV = Vec<Vec<TwoJetVec>>;
-type SpeedVec = Vec<f64>;
-type AccelVec = Vec<SpeedVec>;
+type SpeedVec  = Vec<f64>;
+type AccelVec  = Vec<SpeedVec>;
+
+
+fn print_part_side(partlist: &[u8], idx: bool) {
+	let j: f64 = idx as i32 as f64;
+	let mut csign: char;
+	let mut psign: u8;
+	let mut jk: f64;
+	
+	for (k, part) in partlist.iter().enumerate().take(N_STRIPS.get() as usize) {
+		if idx {
+			jk =  N_STRIPS.get() as f64 - 1.0 - k as f64;
+			psign = PART_NEG;
+			csign = '-';
+		} else {
+			jk = k as f64;
+			psign = PART_POS;
+			csign = '+';
+		};
+
+		if (*part & psign) > 0 {
+			let t: f64 = 2.0 * std::f64::consts::PI * jk / N_STRIPS.get() as f64;
+			let s: f64 = t.sin();
+			let c: f64 = t.cos();
+
+			// fprintf(fp, "# %c%d of %d\n", j < 0 ? '-' : '+', k, N_STRIPS.get());
+			println!("# {sign}{k} of {ns}", sign=csign, k=k, ns=N_STRIPS.get());
+			// fprintf(fp, "\t%10f %10f %10f %10f\n", j * c, -s, 0., 0.);
+			println!("\t{jc:10} {s:10} {z:10} {z:10}", jc=(j * c), s=-s, z=0.0);
+			// fprintf(fp, "\t%10f %10f %10f %10f\n", j * s, c, 0., 0.);
+			println!("\t{js:10} {c:10} {z:10} {z:10}", js=(j * s), c=c, z=0.0);
+			// fprintf(fp, "\t%10f %10f %10f %10f\n", 0., 0., (double)j, 0.);
+			println!("\t{z:10} {z:10} {jf:10} {z:10}", z=0.0, jf=j);
+			// fprintf(fp, "\t%10f %10f %10f %10f\n", 0., 0., 0., 1.);
+			println!("\t{z:10} {z:10} {z:10} {u:10}", u=1.0, z=0.0);
+		};
+	};
+}
 
 fn calc_speed_v(oper: Sto, u: f64, t: f64) -> f64 {
 	let nu: ThreeJet = ThreeJet::new_simple(u, 1.0, 0.0);
@@ -88,35 +125,15 @@ pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 		/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
 		 * complete sphere. */
 
-		let partlist: Vec<char> = parse_parts(parts);
+		let partlist: Vec<u8> = parse_parts(parts);
+		
 		assert!(!partlist.is_empty());
 
 		println!("{{ INST transforms {{ TLIST");
 		
-		let mut j = -1;
-		while j <= 1 { j += 2; // ???
-			for (k, part) in partlist.iter().enumerate().take(N_STRIPS.get() as usize) {
-				let sign: i32 = if j < 0 { PART_NEG } else { PART_POS };
-				if (*part as i32 & sign) > 0 {
-					let jk: f64 = if j < 0 { N_STRIPS.get() as f64 - 1.0 - k as f64 } else { k as f64 };
-					let t: f64 = 2.0 * std::f64::consts::PI * jk / N_STRIPS.get() as f64;
-					let s: f64 = t.sin();
-					let c: f64 = t.cos();
+		print_part_side(&partlist, false);
+		print_part_side(&partlist, true);
 
-					let sign = if j < 0 { '-' } else { '+' };
-					// fprintf(fp, "# %c%d of %d\n", j < 0 ? '-' : '+', k, N_STRIPS.get());
-					println!("# {sign}{k} of {ns}", sign=sign, k=k, ns=N_STRIPS.get());
-					// fprintf(fp, "\t%10f %10f %10f %10f\n", j * c, -s, 0., 0.);
-					println!("\t{jc:10} {s:10} {z:10} {z:10}", jc=(j as f64 * c), s=-s, z=0.0);
-					// fprintf(fp, "\t%10f %10f %10f %10f\n", j * s, c, 0., 0.);
-					println!("\t{js:10} {c:10} {z:10} {z:10}", js=(j as f64 * s), c=c, z=0.0);
-					// fprintf(fp, "\t%10f %10f %10f %10f\n", 0., 0., (double)j, 0.);
-					println!("\t{z:10} {z:10} {jf:10} {z:10}", z=0.0, jf=(j as f64));
-					// fprintf(fp, "\t%10f %10f %10f %10f\n", 0., 0., 0., 1.);
-					println!("\t{z:10} {z:10} {z:10} {u:10}", u=1.0, z=0.0);
-				};
-			};
-		};
 		print!("}}\ngeom ");
 	}
 	if BREZIER.get() {
@@ -154,42 +171,48 @@ pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 	}
 }
 
-fn parse_parts(parts: Vec<char>) -> Vec<char> {
+fn parse_parts(parts: Vec<char>) -> Vec<u8> {
 	/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
 	 * complete sphere.  */
-	let mut partlist: Vec<char> = Vec::new();
-	let mut sign: char = '!';
-	let mut bits: i32;
+	let mut partlist: Vec<u8> = vec![0; N_STRIPS.get() as usize];
+	let mut sign:     char    = char::default();
+	let mut ncp: 	  usize   = 0;
 
-	let lim: usize = parts.len();
-	let mut idx: usize = 0;
+	let mut slice: &[char];
+	let mut bits:  u8;
 
-	while idx < lim {
-		if parts[idx] == ' ' || parts[idx] == ',' {
-			idx += 1;
-			sign = dbg!(parts[idx]);
-			continue;
-		};
+	assert!(parts[0] == '+' || parts[0] == '-', "Partlist must contain at least one '+' or one '-' sign");
 
-		if sign == '+' {		bits = PART_POS;
-		} else if sign == '-' { bits = PART_NEG;
-		} else {				bits = PART_POS | PART_NEG;
-			idx = idx.overflowing_sub(1).0.clamp(0, lim-1);
-		};
-
-		if parts[idx] == '*' {
-			for j in 0..N_STRIPS.get() as usize {
-				partlist[j] = (*partlist.get(j).unwrap_or(&char::from(0)) as u8 | bits as u8) as char;
-			};
-			idx += 1;
+	for (idx, &part) in parts.iter().enumerate() {
+		if part == ' ' || part == ',' { sign = dbg!(part); continue; };
+		if dbg!(ncp) > 0 { ncp -= 1; continue; };
+		
+		if sign == '+' {
+			bits = PART_POS;
+		} else if sign == '-' {
+			bits = PART_NEG;
 		} else {
-			let mut ncp: usize = 0;
- 			let ji: i64 = crate::c_gformat::str_to_i64(&parts, &mut ncp, 10).expect("Invalid number passed to -parts argument");
- 			if idx == ncp { panic!("evert -parts: expected string with alternating signs and strip numbers"); };
- 			if ji < 0 || ji >= N_STRIPS.get().into() { panic!("evert -parts: bad strip number {ji}; must be in range 0..{n}\n", ji=ji, n=N_STRIPS.get() - 1); };
- 			let element: char = (*partlist.get(ji as usize).unwrap_or(&char::from(0)) as u8 | bits as u8) as char;
-			partlist.insert(ji as usize, element);
- 			idx = ncp;
+			bits = PART_POS | PART_NEG;
+		};
+		
+		if part == '*' {
+			for char in partlist.iter_mut().take(N_STRIPS.get() as usize) {
+				*char |= bits;
+			};
+			continue;
+		} else {
+			slice = &parts[idx..];
+
+			let j: i64 = str_to_i64(slice, &mut ncp, 10).unwrap();
+			if part == slice[ncp] {
+				panic!("evert -parts: expected string with alternating signs and strip numbers");
+			};
+			if j < 0 || j >= N_STRIPS.get().into() {
+				panic!("evert -parts: bad strip number {}; must be in range 0..{}", j, N_STRIPS.get() - 1);
+			};
+			if idx != 0 {
+				partlist[j as usize] |= bits;
+			}
  		};
 	};
 	return partlist;

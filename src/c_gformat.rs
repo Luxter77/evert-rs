@@ -38,24 +38,18 @@ fn round(num: f64, sigdigs: usize) -> f64 {
         return num;
     }
     let sigdigs = sigdigs.min(MAX_PRECISION).saturating_sub(1);
-    format!("{0:.1$e}", num, sigdigs)
-        .parse()
-        .expect("Invalid builtin formatting output")
+    format!("{0:.1$e}", num, sigdigs).parse().expect("Invalid builtin formatting output")
 }
 
 impl std::fmt::Display for CGFloat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        self.format(f, false)
-    }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> { self.format(f, false) }
 }
 
 impl std::fmt::LowerExp for CGFloat {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.format(f, true)
-    }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { self.format(f, true) }
 }
 
-pub fn str_to_i64(string: &Vec<char>, idx: &mut usize, base: u32) -> Result<i64, std::num::ParseIntError> {
+pub fn str_to_i64(string: &[char], idx: &mut usize, base: u32) -> Result<i64, std::num::ParseIntError> {
     if string.is_empty() { unimplemented!() };
     
     *idx = 0;
@@ -63,7 +57,9 @@ pub fn str_to_i64(string: &Vec<char>, idx: &mut usize, base: u32) -> Result<i64,
     if string[*idx] == '-' || string[*idx] == '+' { *idx += 1; };
     while string.get(*idx).unwrap_or(&'!').is_ascii_digit() { *idx += 1; };
     
-    return match i64::from_str_radix(string[0..=*idx-1].iter().collect::<String>().as_str(), base) {
+    *idx -= 1;
+
+    return match i64::from_str_radix(string[0..=*idx].iter().collect::<String>().as_str(), base) {
         Ok(long) =>  { Ok(long) },
         Err(err) => { *idx = 0; Err(err) },
     };
@@ -71,7 +67,7 @@ pub fn str_to_i64(string: &Vec<char>, idx: &mut usize, base: u32) -> Result<i64,
 
 mod tests {
     #[test]
-    fn test_cgfloat() {
+    fn cgfloat() {
         assert_eq!("42", format!("{}", crate::c_gformat::CGFloat(42.)));
         assert_eq!("1.23", format!("{:.3}", crate::c_gformat::CGFloat(1.2345)));
         assert_eq!("-1.23", format!("{:.3}", crate::c_gformat::CGFloat(-1.2345)));
@@ -83,14 +79,14 @@ mod tests {
         assert_eq!("0", format!("{}", crate::c_gformat::CGFloat(0.0)));
     }
     #[test]
-    fn test_str_to_i64() {
+    fn str_to_i64() {
         let cases: [(&str, i64, usize); 6] = [
-            ("64adifghjwerghwrgh", 64, 2),
-            ("64adifghjwerghwrgh", 64, 2),
-            ("-1", -1, 2),
-            ("+10hola", 10, 3),
-            ("+100hola", 100, 4),
-            ("100h123ola", 100, 3),
+            ("64adifghjwerghwrgh", 64, 1),
+            ("64adifghjwerghwrgh", 64, 1),
+            ("-1", -1, 1),
+            ("+10hola", 10, 2),
+            ("+100hola", 100, 3),
+            ("100h123ola", 100, 2),
         ];
         for (str, value, ridx) in cases {
             let mut idx: usize = 0;
