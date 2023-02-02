@@ -2,7 +2,7 @@ use crate::{
 	nstrip::{ N_STRIPS, BREZIER, BINARY, EasyAtomic },
 	twojetvec::TwoJetVec,
 	threejet::ThreeJet,
-	sphere::{Eversible, Sto}, c_gformat::str_to_i64,
+	sphere::{Eversible, Sto}, c_gformat::{str_to_i64, signof},
 };
 
 static PART_POS: u8 = 0x1;
@@ -17,6 +17,11 @@ type TwoJetVVV = Vec<Vec<TwoJetVec>>;
 type SpeedVec  = Vec<f64>;
 type AccelVec  = Vec<SpeedVec>;
 
+fn print_transforms(x: f64, y: f64, z: f64, w: f64) {
+	let (xs, ys, zs, ws): (char, char, char, char) = (signof(x.signum()), signof(y.signum()), signof(z.signum()), signof(w.signum()));
+	let (x, y, z, w): (f64, f64, f64, f64) = (x.abs(), y.abs(), z.abs(), w.abs());
+	println!("\t{xs}{x:1.6} {ys}{y:1.6} {zs}{z:1.6} {ws}{w:1.6}");
+}
 
 fn print_part_side(partlist: &[u8], idx: bool) {
 	let j: f64 = idx as i32 as f64;
@@ -39,17 +44,16 @@ fn print_part_side(partlist: &[u8], idx: bool) {
 			let t: f64 = 2.0 * std::f64::consts::PI * jk / N_STRIPS.get() as f64;
 			let s: f64 = t.sin();
 			let c: f64 = t.cos();
-
 			// fprintf(fp, "# %c%d of %d\n", j < 0 ? '-' : '+', k, N_STRIPS.get());
 			println!("# {sign}{k} of {ns}", sign=csign, k=k, ns=N_STRIPS.get());
 			// fprintf(fp, "\t%10f %10f %10f %10f\n", j * c, -s, 0., 0.);
-			println!("\t{jc:10} {s:10} {z:10} {z:10}", jc=(j * c), s=-s, z=0.0);
+			print_transforms(j*c, -s,  0.0, 0.0);
 			// fprintf(fp, "\t%10f %10f %10f %10f\n", j * s, c, 0., 0.);
-			println!("\t{js:10} {c:10} {z:10} {z:10}", js=(j * s), c=c, z=0.0);
+			print_transforms(j*s, c,   0.0, 0.0);
 			// fprintf(fp, "\t%10f %10f %10f %10f\n", 0., 0., (double)j, 0.);
-			println!("\t{z:10} {z:10} {jf:10} {z:10}", z=0.0, jf=j);
+			print_transforms(0.0, 0.0, j,   0.0);
 			// fprintf(fp, "\t%10f %10f %10f %10f\n", 0., 0., 0., 1.);
-			println!("\t{z:10} {z:10} {z:10} {u:10}", u=1.0, z=0.0);
+			print_transforms(0.0, 0.0, 0.0, 1.0);
 		};
 	};
 }
@@ -108,7 +112,7 @@ pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 		u = umin + du * (j as f64);
 
 		values.push(vec![TwoJetVec::zero(); (kmax + 1) as usize]);
-		speedu.push(vec![0.0; (kmax + 1) as usize]);
+		speedu.push(vec![0.0;               (kmax + 1) as usize]);
 		speedv.push(calc_speed_v(oper, u, t));
 
 		for k in 0..kmax {
@@ -119,9 +123,10 @@ pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 		};
 	};
 
-	// println!("Declare \"speeds\" \"varying float\"");
-	// println!("Declare \"speedt\" \"varying float\"");
-	if !parts.len().eq(&0) {
+	let hp: bool = !parts.is_empty();
+	eprintln!("Declare \"speeds\" \"varying float\"");
+	eprintln!("Declare \"speedt\" \"varying float\"");
+	if hp {
 		/* Construct matrices to replicate standard unit (u=0..1, v=0..1) into
 		 * complete sphere. */
 
@@ -131,8 +136,8 @@ pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 
 		println!("{{ INST transforms {{ TLIST");
 		
-		print_part_side(&partlist, false);
 		print_part_side(&partlist, true);
+		print_part_side(&partlist, false);
 
 		print!("}}\ngeom ");
 	}
@@ -161,14 +166,16 @@ pub fn print_scene(oper: Sto, umin: f64, umax: f64, adu: f64, vmin: f64, vmax: f
 			std::io::Write::write(&mut std::io::stdout(), &nu.to_be_bytes()).unwrap();
 			std::io::Write::write(&mut std::io::stdout(), &nv.to_be_bytes()).unwrap();
 		} else {
-			println!("%{} %{}\n", nu, nv);
+			println!("{} {}", nu, nv);
 		}
 		for valuej in values.iter().take(jmax as usize) {
 			for valuejk in valuej.iter().take(kmax as usize) {
-				print!("{}",valuejk.point(None)); }
+				println!("{}",valuejk.point(None)); }
 			if !BINARY.get() { println!() };
 		}
 	}
+	if hp { println!(" }}"); };
+	println!("}}");
 }
 
 fn parse_parts(parts: Vec<char>) -> Vec<u8> {
@@ -181,7 +188,7 @@ fn parse_parts(parts: Vec<char>) -> Vec<u8> {
 	let mut slice: &[char];
 	let mut bits:  u8;
 
-	assert!(parts[0] == '+' || parts[0] == '-', "Partlist must contain at least one '+' or one '-' sign");
+	assert!(parts.contains(&'+') || parts.contains(&'-') || parts.contains(&'*'), "Partlist must contain at least one '+', '-', or '*'");
 
 	for (idx, &part) in parts.iter().enumerate() {
 		if part == ' ' || part == ',' { sign = dbg!(part); continue; };
@@ -196,7 +203,7 @@ fn parse_parts(parts: Vec<char>) -> Vec<u8> {
 		};
 		
 		if part == '*' {
-			for char in partlist.iter_mut().take(N_STRIPS.get() as usize) {
+			for char in partlist.iter_mut() {
 				*char |= bits;
 			};
 			continue;
@@ -205,7 +212,7 @@ fn parse_parts(parts: Vec<char>) -> Vec<u8> {
 
 			let j: i64 = str_to_i64(slice, &mut ncp, 10).unwrap();
 			if part == slice[ncp] {
-				panic!("evert -parts: expected string with alternating signs and strip numbers");
+				panic!("evert -parts: expected string with alternating signs and strip numbers or a single *");
 			};
 			if j < 0 || j >= N_STRIPS.get().into() {
 				panic!("evert -parts: bad strip number {}; must be in range 0..{}", j, N_STRIPS.get() - 1);

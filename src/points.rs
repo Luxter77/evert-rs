@@ -1,4 +1,4 @@
-use crate::c_gformat::CGFloat;
+use crate::c_gformat::{CGFloat, signof};
 
 pub enum FormatType { CG, CF }
 pub struct BrezierPoint { x: f64, y: f64, z: f64, ftm: FormatType }
@@ -6,8 +6,8 @@ pub struct BrezierPoint { x: f64, y: f64, z: f64, ftm: FormatType }
 impl std::fmt::Display for BrezierPoint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.ftm {
-            FormatType::CF => write!(f, "{} {} {}", CGFloat::from(self.x), CGFloat::from(self.y), CGFloat::from(self.z)),
-            FormatType::CG => write!(f, "{} {} {}", self.x, self.y, self.z),
+            FormatType::CF => write!(f, "{:.6} {:.6} {:.6}", CGFloat::from(self.x), CGFloat::from(self.y), CGFloat::from(self.z)),
+            FormatType::CG => write!(f, "{:.6} {:.6} {:.6}", self.x, self.y, self.z),
        }
     }
 }
@@ -26,7 +26,18 @@ pub struct SplinePoint { x: f64, y: f64, z: f64, nx: f64, ny: f64, nz: f64, s: f
 
 impl std::fmt::Display for SplinePoint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{x} {y} {z}    {nx} {ny} {nz}", x=self.x, y=self.y, z=self.z, nx=self.nx*self.s, ny=self.ny*self.s, nz=self.nz*self.s)
+        let nx: f64 = self.nx * self.s;
+        let ny: f64 = self.ny * self.s;
+        let nz: f64 = self.nz * self.s;
+        write!(f,
+            "{xs}{x:.6} {ys}{y:.6} {zs}{z:.6}    {nxs}{nx:.6} {nys}{ny:.6} {nzs}{nz:.6}",
+             xs=signof(self.x),  x=self.x.abs(),
+             ys=signof(self.y),  y=self.y.abs(),
+             zs=signof(self.z),  z=self.z.abs(),
+            nxs=signof(nx),     nx=nx.abs(),
+            nys=signof(ny),     ny=ny.abs(),
+            nzs=signof(nz),     nz=nz.abs()
+        )
     }
 }
 

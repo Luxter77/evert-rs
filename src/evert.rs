@@ -19,6 +19,7 @@ mod sphere;
 mod spline;
 
 use crate::nstrip::{
+    ALLPARTS,
 	N_STRIPS,
     BINARY,
 	EasyAtomic
@@ -49,7 +50,7 @@ Produces radius-S sphere.";
 #[clap(color = clap::ColorChoice::Auto)]
 struct Args {
     /// Timestep [0 <= T <= 1]
-    #[arg(long, default_value_t = 0.00, required=true)]  time:       f64,
+    #[arg(long, default_value_t = 0.00)]                 time:       f64,
     #[arg(long, default_value_t = 8)]                    nstrips:    i32,
     #[arg(long, default_value_t = std::f64::consts::PI)] scale:      f64,
     #[arg(long, default_value_t = 0.00)]                 umin:       f64,
@@ -80,13 +81,15 @@ struct Args {
     #[arg(long, required=false, default_value_t=false)]  bscene:     bool,
     /// Undocumented swtich, triggers binary output instead of human readable.
     #[arg(long, required=false, default_value_t=false)]  binary:     bool,
-    /// Replicate selected portions, e.g. +0-0+2+4+6 for one pole-to-pole strip, plus every other strip in +Z hemisphere; numbers range [0..(nstrips-1)].
+    /// Replicate selected portions or all if '*'; e.g. +0-0+2+4+6 for one pole-to-pole strip, plus every other strip in +Z hemisphere; numbers range [0..(nstrips-1)].
     #[arg(long, default_value_t = String::from("+0"))]   parts:      String,
 }
 
 fn main() {
     let args: Args = Args::parse();
    
+    if ALLPARTS && !args.parts.is_empty() { eprintln!("Evert was built with the AllParts feature; parts will be ignored!") };
+
     N_STRIPS.set(args.nstrips);
     BINARY.set(args.binary);
 

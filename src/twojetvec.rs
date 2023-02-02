@@ -252,14 +252,17 @@ impl PrintableSpline for TwoJetVec {
                 v00.brezier_point(1.0,  us, 0.0, 0.0),
                 v10.brezier_point(1.0, -us, 0.0, 0.0),
                 v10.brezier_point(1.0, 0.0, 0.0, 0.0),
+                
                 v00.brezier_point(1.0, 0.0,  vs, 0.0),
-                v00.brezier_point(1.0,  us, 	vs,  us * vs),
+                v00.brezier_point(1.0,  us,  vs,  us * vs),
                 v10.brezier_point(1.0, -us,  vs, -us * vs),
                 v10.brezier_point(1.0, 0.0,  vs, 0.0),
+                
                 v01.brezier_point(1.0, 0.0, -vs, 0.0),
                 v01.brezier_point(1.0,  us, -vs, -us * vs),
                 v11.brezier_point(1.0, -us, -vs,  us * vs),
                 v11.brezier_point(1.0, 0.0, -vs, 0.0),
+
                 v01.brezier_point(1.0, 0.0, 0.0, 0.0),
                 v01.brezier_point(1.0,  us, 0.0, 0.0),
                 v11.brezier_point(1.0, -us, 0.0, 0.0),

@@ -34,8 +34,7 @@ fn magnitude(num: f64) -> i32 {
 /// runtime according to cargo bench.
 fn round(num: f64, sigdigs: usize) -> f64 {
     if num == 0.0 {
-        // The method below drops the sign of -0.0
-        return num;
+        return num; // The method below drops the sign of -0.0
     }
     let sigdigs = sigdigs.min(MAX_PRECISION).saturating_sub(1);
     format!("{0:.1$e}", num, sigdigs).parse().expect("Invalid builtin formatting output")
@@ -63,6 +62,11 @@ pub fn str_to_i64(string: &[char], idx: &mut usize, base: u32) -> Result<i64, st
         Ok(long) =>  { Ok(long) },
         Err(err) => { *idx = 0; Err(err) },
     };
+}
+
+#[inline]
+pub fn signof(num: f64) -> char {
+    if num.signum() < 0.0 { return '-' } else { ' ' }
 }
 
 mod tests {

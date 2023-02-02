@@ -1,7 +1,8 @@
 use std::sync::atomic::{AtomicI32, AtomicBool, Ordering};
 
-pub static N_STRIPS: AtomicI32  = AtomicI32::new(8);
+pub static ALLPARTS: bool = cfg!(feature="allparts");
 
+pub static N_STRIPS: AtomicI32  = AtomicI32::new(8);
 pub static BREZIER:  AtomicBool = AtomicBool::new(false);
 pub static BINARY:   AtomicBool = AtomicBool::new(false);
 
